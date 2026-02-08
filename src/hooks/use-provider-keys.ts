@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ipc } from "@/ipc/manager";
 import type { AIProvider } from "@/lib/providers/registry";
@@ -8,6 +8,7 @@ import {
   validateProviderKey,
 } from "@/lib/providers/registry";
 import type { AISettings } from "@/types/settings";
+import { queryClient } from "@/lib/query";
 
 export const PROVIDER_KEYS_QUERY_KEY = ["provider-keys"] as const;
 
@@ -30,8 +31,6 @@ export function useProviderKeyStatuses() {
 }
 
 export function useSaveApiKeyWithModel() {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async ({
       provider,
@@ -83,8 +82,6 @@ export function useSaveApiKeyWithModel() {
 }
 
 export function useDeleteApiKey() {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (provider: AIProvider) => {
       await ipc.client.security.removeProviderKey({ provider });

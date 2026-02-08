@@ -1,125 +1,156 @@
 import { Stagehand, type LogLine } from "@browserbasehq/stagehand";
 import { z } from "zod";
 import { createLogger } from "@/lib/logger";
-import { getAIModel } from "@/lib/ai/model-factory";
 import type { AIProvider } from "@/lib/providers/registry";
-import type {
-  AutofillProgress,
-  AutofillResult,
-  CompressedFieldData,
-  CompressedMemoryData,
-  FieldMapping,
-  FieldPurpose,
-  FieldType,
-  SelectOptionSnapshot,
-} from "@/types/autofill";
-import type { WebsiteContext, WebsiteType } from "@/types/context";
 import type { MemoryEntry } from "@/types/memory";
-import { AIMatcher } from "./ai-matcher";
-import { FallbackMatcher } from "./fallback-matcher";
-import { MAX_FIELDS_PER_PAGE, MAX_MEMORIES_FOR_MATCHING, MIN_MATCH_CONFIDENCE } from "./constants";
 
 const logger = createLogger("stagehand-engine");
 
-const ExtractedFieldSchema = z.object({
-  selector: z.string().describe("A unique CSS selector for this form field"),
-  type: z
-    .enum([
-      "text",
-      "email",
-      "tel",
-      "url",
-      "textarea",
-      "select",
-      "checkbox",
-      "date",
-      "number",
-      "password",
-    ])
-    .describe("The input type"),
-  label: z.string().nullable().describe("The visible label text for this field"),
-  placeholder: z
-    .string()
-    .nullable()
-    .describe("The placeholder text if any"),
-  name: z.string().nullable().describe("The name attribute"),
-  id: z.string().nullable().describe("The id attribute"),
-  required: z.boolean().describe("Whether the field is required"),
-  ariaLabel: z
-    .string()
-    .nullable()
-    .describe("The aria-label or aria-labelledby text"),
-  helperText: z
-    .string()
-    .nullable()
-    .describe("Any helper/description text near the field"),
-  options: z
-    .array(
-      z.object({
-        value: z.string(),
-        label: z.string().nullable(),
-      }),
-    )
-    .nullable()
-    .describe("For select fields, the list of option values and labels"),
-  currentValue: z
-    .string()
-    .describe("The current value of the field (empty string if blank)"),
-});
+const STAGEHAND_ENV_KEYS: Partial<Record<AIProvider, string>> = {
+  openai: "OPENAI_API_KEY",
+  anthropic: "ANTHROPIC_API_KEY",
+  gemini: "GOOGLE_API_KEY",
+};
 
-const ExtractedFormSchema = z.object({
-  pageTitle: z.string().describe("The page title"),
-  pageUrl: z.string().describe("The current page URL"),
-  formPurpose: z
-    .string()
-    .describe(
-      "A short description of what this form is for (e.g. 'job application', 'signup', 'contact form')",
-    ),
-  websiteType: z
-    .enum([
-      "job_portal",
-      "social",
-      "e-commerce",
-      "blog",
-      "forum",
-      "news",
-      "corporate",
-      "portfolio",
-      "dating",
-      "rental",
-      "survey",
-      "unknown",
-    ])
-    .describe("The type of website"),
-  fields: z
-    .array(ExtractedFieldSchema)
-    .describe("All visible, interactive form fields on the page"),
-});
+const STAGEHAND_PROVIDER_PREFIX: Record<AIProvider, string> = {
+  openai: "openai",
+  anthropic: "anthropic",
+  gemini: "google",
+  groq: "openai",
+  deepseek: "openai",
+  ollama: "openai",
+};
 
-type ExtractedForm = z.infer<typeof ExtractedFormSchema>;
-type ExtractedField = z.infer<typeof ExtractedFieldSchema>;
+const DEFAULT_MODELS: Record<AIProvider, string> = {
+  openai: "openai/gpt-4o",
+  anthropic: "anthropic/claude-sonnet-4-20250514",
+  gemini: "google/gemini-2.0-flash",
+  groq: "openai/gpt-4o",
+  deepseek: "openai/gpt-4o",
+  ollama: "openai/gpt-4o",
+};
+
+function resolveStagehandModel(
+  provider: AIProvider,
+  modelName?: string,
+): string {
+  if (modelName) {
+    const prefix = STAGEHAND_PROVIDER_PREFIX[provider];
+    return `${prefix}/${modelName}`;
+  }
+  return DEFAULT_MODELS[provider];
+}
+
+function setProviderEnvKey(provider: AIProvider, apiKey: string): void {
+  const envVar = STAGEHAND_ENV_KEYS[provider];
+  if (envVar && apiKey) {
+    process.env[envVar] = apiKey;
+  }
+}
+
+export interface FilledField {
+  label: string;
+  value: string;
+  fieldType?: string;
+}
+
+export interface AutofillResult {
+  success: boolean;
+  filledFields: FilledField[];
+  totalFieldsFound: number;
+  message?: string;
+  error?: string;
+  processingTime?: number;
+}
+
+// ── Progress ──────────────────────────────────────────────────
+
+export type AutofillProgressState =
+  | "idle"
+  | "launching"
+  | "navigating"
+  | "observing"
+  | "filling"
+  | "extracting"
+  | "completed"
+  | "failed";
+
+export interface AutofillProgress {
+  state: AutofillProgressState;
+  message: string;
+}
 
 export type ProgressCallback = (progress: AutofillProgress) => void;
+
+function formatMemoriesForPrompt(memories: MemoryEntry[]): string {
+  const grouped = new Map<string, MemoryEntry[]>();
+  for (const m of memories) {
+    const cat = m.category;
+    if (!grouped.has(cat)) grouped.set(cat, []);
+    grouped.get(cat)!.push(m);
+  }
+
+  const lines: string[] = ["## User's Personal Data\n"];
+  for (const [category, entries] of grouped) {
+    lines.push(`### ${category}`);
+    for (const entry of entries) {
+      if (entry.question) {
+        lines.push(`- ${entry.question}: ${entry.answer}`);
+      } else {
+        lines.push(`- ${entry.answer}`);
+      }
+    }
+    lines.push("");
+  }
+
+  return lines.join("\n");
+}
+
+const FilledFieldsSchema = z.object({
+  fields: z.array(
+    z.object({
+      label: z
+        .string()
+        .describe("The visible label or description of the field"),
+      value: z
+        .string()
+        .describe("The current value entered in the field"),
+      fieldType: z
+        .string()
+        .optional()
+        .describe("The type of field (text, email, select, etc.)"),
+    }),
+  ),
+});
 
 export class StagehandEngine {
   private stagehand: InstanceType<typeof Stagehand> | null = null;
   private onProgress: ProgressCallback;
+  private aborted = false;
 
   constructor(onProgress?: ProgressCallback) {
     this.onProgress = onProgress ?? (() => { });
   }
 
-  async launch(): Promise<void> {
+  async launch(
+    provider: AIProvider,
+    apiKey: string,
+    modelName?: string,
+  ): Promise<void> {
     logger.info("Launching Stagehand (LOCAL headed browser)");
-    this.emitProgress("detecting", "Launching browser…");
+    this.emitProgress("launching", "Launching browser…");
+
+    setProviderEnvKey(provider, apiKey);
+    const model = resolveStagehandModel(provider, modelName);
 
     this.stagehand = new Stagehand({
       env: "LOCAL",
+      model,
       localBrowserLaunchOptions: {
         headless: false,
         viewport: { width: 1440, height: 900 },
       },
-      verbose: 1,
+      selfHeal: true,
       disablePino: true,
       logger: (line: LogLine) => {
         if (line.level === 0) logger.error(line.message);
@@ -129,10 +160,11 @@ export class StagehandEngine {
     });
 
     await this.stagehand.init();
-    logger.info("Stagehand browser launched");
+    logger.info(`Stagehand launched with model: ${model}`);
   }
 
   async close(): Promise<void> {
+    this.aborted = true;
     if (this.stagehand) {
       try {
         await this.stagehand.close();
@@ -146,79 +178,72 @@ export class StagehandEngine {
   async runAutofill(
     url: string,
     memories: MemoryEntry[],
-    provider: AIProvider,
-    apiKey: string,
-    modelName?: string,
   ): Promise<AutofillResult> {
     const startTime = performance.now();
 
     try {
-      await this.launch();
+      const sh = this.requireStagehand();
 
-      this.emitProgress("detecting", `Navigating to ${url}…`);
-      const extracted = await this.navigateAndExtract(url);
+      this.emitProgress("navigating", `Navigating to ${url}…`);
+      const page = sh.context.pages()[0];
+      if (!page) throw new Error("No page available in Stagehand context");
+      await page.goto(url, { waitUntil: "domcontentloaded" });
+      await new Promise((r) => setTimeout(r, 2_000));
+      if (this.aborted) return this.abortedResult(startTime);
 
-      if (extracted.fields.length === 0) {
+      this.emitProgress("observing", "Discovering form fields…");
+      const observedFields = await sh.observe(
+        "Find all visible, interactive form fields on this page including text inputs, email inputs, phone inputs, textareas, dropdowns/selects, checkboxes, date pickers, and radio buttons. Exclude hidden fields and submit/cancel buttons.",
+      );
+      const totalFields = observedFields.length;
+      logger.info(`Observed ${totalFields} form fields`);
+
+      if (totalFields === 0) {
         this.emitProgress("failed", "No form fields found on this page.");
         return {
           success: false,
-          mappings: [],
+          filledFields: [],
+          totalFieldsFound: 0,
           error: "No form fields detected on the page",
           processingTime: performance.now() - startTime,
         };
       }
-
-      logger.info(
-        `Extracted ${extracted.fields.length} fields from ${extracted.pageUrl}`,
-      );
-      this.emitProgress(
-        "analyzing",
-        `Found ${extracted.fields.length} form fields. Analyzing…`,
-      );
-
-      const compressedFields = this.compressFields(extracted.fields);
-      const compressedMemories = this.compressMemories(memories);
-      const websiteContext = this.buildWebsiteContext(extracted);
+      if (this.aborted) return this.abortedResult(startTime);
 
       this.emitProgress(
-        "matching",
-        `Matching ${compressedFields.length} fields to ${compressedMemories.length} memories…`,
+        "filling",
+        `Filling ${totalFields} form fields with your data…`,
       );
+      const memoryContext = formatMemoriesForPrompt(memories);
 
-      const mappings = await this.matchFields(
-        compressedFields,
-        compressedMemories,
-        websiteContext,
-        provider,
-        apiKey,
-        modelName,
-      );
-
-      const fillable = mappings.filter(
-        (m) => m.value !== null && m.confidence >= MIN_MATCH_CONFIDENCE,
-      );
-      logger.info(
-        `Matched ${fillable.length}/${mappings.length} fields above threshold`,
-      );
-
-      if (fillable.length > 0) {
-        this.emitProgress(
-          "filling",
-          `Filling ${fillable.length} fields…`,
+      let filledFields: FilledField[];
+      try {
+        filledFields = await this.fillWithAgent(memoryContext);
+      } catch (agentErr) {
+        logger.warn(
+          "Agent strategy failed, trying observe+act fallback:",
+          agentErr,
         );
-        await this.fillFields(fillable, extracted.fields);
+        filledFields = await this.fillWithObserveAct(memories);
+      }
+      if (this.aborted) return this.abortedResult(startTime);
+
+      if (filledFields.length === 0) {
+        this.emitProgress("extracting", "Verifying filled fields…");
+        filledFields = await this.extractFilledFields();
       }
 
-      const processingTime = performance.now() - startTime;
+      const elapsed = performance.now() - startTime;
       this.emitProgress(
         "completed",
-        `Done — filled ${fillable.length}/${mappings.length} fields in ${(processingTime / 1000).toFixed(1)}s`,
+        `Done — filled ${filledFields.length} of ${totalFields} fields in ${(elapsed / 1000).toFixed(1)}s`,
       );
 
       return {
         success: true,
-        mappings,
-        processingTime,
+        filledFields,
+        totalFieldsFound: totalFields,
+        processingTime: elapsed,
       };
     } catch (error) {
       const msg =
@@ -227,189 +252,89 @@ export class StagehandEngine {
       this.emitProgress("failed", `Error: ${msg}`);
       return {
         success: false,
-        mappings: [],
+        filledFields: [],
+        totalFieldsFound: 0,
         error: msg,
         processingTime: performance.now() - startTime,
       };
     }
   }
 
-  private async navigateAndExtract(url: string): Promise<ExtractedForm> {
+  private async fillWithAgent(
+    memoryContext: string,
+  ): Promise<FilledField[]> {
     const sh = this.requireStagehand();
-    const page = sh.context.pages()[0];
 
-    if (!page) {
-      throw new Error("No page available in Stagehand context");
-    }
+    const systemPrompt = `You are an expert form-filling assistant. Use the following personal data to fill out forms accurately.
 
-    await page.goto(url, { waitUntil: "domcontentloaded" });
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+${memoryContext}
 
-    logger.info("Extracting form fields via Stagehand…");
+Rules:
+- Only fill fields where you have matching personal data
+- Do NOT fabricate or invent any information
+- Do NOT fill password fields
+- For dropdowns/selects, choose the closest matching option
+- For checkboxes, check them only if clearly appropriate
+- If a field asks for part of compound data (e.g. "First Name" from a full name), extract just that part
+- If multiple memories could match, pick the most relevant one
+- If no data matches a field, leave it empty
+- Do NOT submit the form`;
 
-    const result = await sh.extract(
-      "Extract all visible, interactive form fields on this page. Include text inputs, email inputs, phone inputs, textareas, selects/dropdowns, checkboxes, date pickers, and number inputs. Exclude hidden fields, submit buttons, and password fields. For select/dropdown fields, include all available options.",
-      ExtractedFormSchema,
+    const agent = sh.agent({
+      systemPrompt,
+    });
+
+    const result = await agent.execute(
+      "Fill out all the form fields on this page using the personal data provided. Fill every field where you have matching data. Do not submit the form.",
     );
 
-    return result;
+    logger.info("Agent completed:", JSON.stringify(result));
+
+    return await this.extractFilledFields();
   }
 
-  private compressFields(fields: ExtractedField[]): CompressedFieldData[] {
-    return fields
-      .slice(0, MAX_FIELDS_PER_PAGE)
-      .filter((f) => f.type !== "password")
-      .map((field, index) => {
-        const labels: string[] = [];
-        if (field.label) labels.push(field.label);
-        if (field.ariaLabel) labels.push(field.ariaLabel);
-        if (field.placeholder) labels.push(field.placeholder);
-
-        const contextParts: string[] = [];
-        if (field.name) contextParts.push(`name=${field.name}`);
-        if (field.id) contextParts.push(`id=${field.id}`);
-        if (field.helperText) contextParts.push(field.helperText);
-
-        return {
-          opid: field.selector,
-          highlightIndex: index,
-          type: field.type as FieldType,
-          purpose: this.inferPurpose(field),
-          labels,
-          context: contextParts.join(" | "),
-          options: field.options as SelectOptionSnapshot[] | undefined,
-        } satisfies CompressedFieldData;
-      });
-  }
-
-  private compressMemories(
+  private async fillWithObserveAct(
     memories: MemoryEntry[],
-  ): CompressedMemoryData[] {
-    return memories.slice(0, MAX_MEMORIES_FOR_MATCHING).map((m) => ({
-      id: m.id,
-      question: m.question ?? "",
-      answer: m.answer,
-      category: m.category,
-    }));
-  }
-
-  private buildWebsiteContext(extracted: ExtractedForm): WebsiteContext {
-    return {
-      metadata: {
-        title: extracted.pageTitle,
-        description: null,
-        keywords: null,
-        ogTitle: null,
-        ogDescription: null,
-        ogSiteName: null,
-        ogType: null,
-        url: extracted.pageUrl,
-      },
-      websiteType: extracted.websiteType as WebsiteType,
-      formPurpose: extracted.formPurpose,
-    };
-  }
-
-  private inferPurpose(field: ExtractedField): FieldPurpose {
-    const text = [field.label, field.name, field.id, field.placeholder, field.ariaLabel]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    if (field.type === "email" || /email|e-mail/.test(text)) return "email";
-    if (field.type === "tel" || /phone|tel|mobile|cell/.test(text)) return "phone";
-    if (/company|org|employer|business/.test(text)) return "company";
-    if (/title|position|role|job/.test(text)) return "title";
-    if (/city|town/.test(text)) return "city";
-    if (/state|province|region/.test(text)) return "state";
-    if (/zip|postal|postcode/.test(text)) return "zip";
-    if (/country|nation/.test(text)) return "country";
-    if (/address|street|addr/.test(text)) return "address";
-    if (/name|fullname|first|last|given|family/.test(text)) return "name";
-
-    return "unknown";
-  }
-
-  private async matchFields(
-    fields: CompressedFieldData[],
-    memories: CompressedMemoryData[],
-    websiteContext: WebsiteContext,
-    provider: AIProvider,
-    apiKey: string,
-    modelName?: string,
-  ): Promise<FieldMapping[]> {
-    try {
-      const aiMatcher = new AIMatcher();
-      return await aiMatcher.matchFields(
-        fields,
-        memories,
-        websiteContext,
-        provider,
-        apiKey,
-        modelName,
-      );
-    } catch (error) {
-      logger.warn("AI matching failed, trying fallback:", error);
-      const fallback = new FallbackMatcher();
-      return await fallback.matchFields(fields, memories);
-    }
-  }
-
-  private async fillFields(
-    mappings: FieldMapping[],
-    extractedFields: ExtractedField[],
-  ): Promise<void> {
+  ): Promise<FilledField[]> {
     const sh = this.requireStagehand();
-    const fieldBySelector = new Map(
-      extractedFields.map((f) => [f.selector, f]),
-    );
+    const filled: FilledField[] = [];
 
-    let filled = 0;
+    for (const memory of memories) {
+      if (this.aborted) break;
 
-    for (const mapping of mappings) {
-      if (!mapping.value) continue;
-
-      const field = fieldBySelector.get(mapping.fieldOpid);
-
-      if (!field) {
-        logger.warn(`No extracted field for selector: ${mapping.fieldOpid}`);
-        continue;
-      }
+      const label = memory.question || memory.category;
 
       try {
-        const selector = mapping.fieldOpid;
-        const value = mapping.value;
+        const result = await sh.act(
+          `Find a form field that asks for "${label}" and type %value% into it. If no matching field exists, do nothing.`,
+          { variables: { value: memory.answer } },
+        );
 
-        if (field.type === "select") {
-          await sh.act(
-            `Select the option "${value}" in the dropdown/select field with selector "${selector}"`,
-          );
-        } else if (field.type === "checkbox") {
-          const shouldCheck = ["true", "yes", "1", "on"].includes(
-            value.toLowerCase(),
-          );
-          await sh.act(
-            `${shouldCheck ? "Check" : "Uncheck"} the checkbox with selector "${selector}"`,
-          );
-        } else {
-          await sh.act(
-            `Clear and type "${value}" into the input field with selector "${selector}"`,
-          );
+        if (result.success) {
+          filled.push({ label, value: memory.answer });
         }
-
-        filled++;
-        logger.debug(
-          `Filled field [${selector}] with value (confidence: ${mapping.confidence})`,
-        );
-      } catch (err) {
-        logger.warn(
-          `Failed to fill field [${mapping.fieldOpid}]:`,
-          err,
-        );
+      } catch {
+        logger.debug(`No matching field for memory: ${label}`);
       }
     }
 
-    logger.info(`Successfully filled ${filled}/${mappings.length} fields`);
+    return filled.length > 0
+      ? await this.extractFilledFields()
+      : filled;
+  }
+
+  private async extractFilledFields(): Promise<FilledField[]> {
+    const sh = this.requireStagehand();
+    try {
+      const result = await sh.extract(
+        "Extract all form fields that currently have a non-empty value. For each, give the visible label and the current value.",
+        FilledFieldsSchema,
+      );
+      return result.fields;
+    } catch (err) {
+      logger.warn("Failed to extract filled fields:", err);
+      return [];
+    }
   }
 
   private requireStagehand(): InstanceType<typeof Stagehand> {
@@ -420,12 +345,20 @@ export class StagehandEngine {
   }
 
   private emitProgress(
-    state: AutofillProgress["state"],
+    state: AutofillProgressState,
     message: string,
-    extra?: Partial<AutofillProgress>,
   ): void {
-    const progress: AutofillProgress = { state, message, ...extra };
-    this.onProgress(progress);
+    this.onProgress({ state, message });
     logger.info(`[${state}] ${message}`);
+  }
+
+  private abortedResult(startTime: number): AutofillResult {
+    return {
+      success: false,
+      filledFields: [],
+      totalFieldsFound: 0,
+      error: "Autofill was stopped",
+      processingTime: performance.now() - startTime,
+    };
   }
 }

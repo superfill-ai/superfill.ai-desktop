@@ -1,11 +1,13 @@
 import { os } from "@orpc/server";
-import { StagehandEngine } from "@/lib/autofill/stagehand-engine";
+import {
+  StagehandEngine,
+  type AutofillResult,
+} from "@/lib/autofill/stagehand-engine";
 import { getKey } from "@/lib/storage/key-vault";
 import { getAllMemories } from "@/lib/storage/memories-store";
 import { getAISettings } from "@/lib/storage/settings-store";
 import { createLogger } from "@/lib/logger";
 import type { AIProvider } from "@/lib/providers/registry";
-import type { AutofillResult } from "@/types/autofill";
 import { startAutofillInputSchema } from "./schemas";
 
 const logger = createLogger("ipc:autofill");
@@ -23,7 +25,8 @@ export const startAutofill = os
     if (!provider) {
       return {
         success: false,
-        mappings: [],
+        filledFields: [],
+        totalFieldsFound: 0,
         error:
           "No AI provider selected. Go to Settings → Providers and configure one first.",
       };
@@ -34,7 +37,8 @@ export const startAutofill = os
     if (!apiKey && provider !== "ollama") {
       return {
         success: false,
-        mappings: [],
+        filledFields: [],
+        totalFieldsFound: 0,
         error: `No API key stored for ${provider}. Go to Settings → Providers to add one.`,
       };
     }
@@ -46,7 +50,8 @@ export const startAutofill = os
     if (memories.length === 0) {
       return {
         success: false,
-        mappings: [],
+        filledFields: [],
+        totalFieldsFound: 0,
         error:
           "No memories stored yet. Go to Memories and add some personal data first.",
       };
@@ -70,13 +75,8 @@ export const startAutofill = os
     activeEngine = engine;
 
     try {
-      const result = await engine.runAutofill(
-        url,
-        memories,
-        provider as AIProvider,
-        apiKey ?? "",
-        modelName,
-      );
+      await engine.launch(provider as AIProvider, apiKey ?? "", modelName);
+      const result = await engine.runAutofill(url, memories);
       return result;
     } finally {
       await engine.close();

@@ -14,4 +14,5 @@ export const STORAGE_FILES = {
   AI_SETTINGS: "ai-settings.json",
   UI_SETTINGS: "ui-settings.json",
   API_KEYS: "api-keys.json",
+  BROWSER_SETTINGS: "browser-settings.json",
 };

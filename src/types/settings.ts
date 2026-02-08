@@ -25,6 +25,15 @@ export interface UISettings {
   rightClickGuideDismissed?: boolean;
 }
 
+export type BrowserType = "chrome" | "edge" | "brave" | "chromium";
+
+export interface BrowserSettings {
+  /** Which Chromium browser to launch (auto = first detected). */
+  preferredBrowser: BrowserType | "auto";
+  /** Keep browser profile across sessions (preserves cookies/logins). */
+  persistProfile: boolean;
+}
+
 export interface ProviderOption {
   value: AIProvider;
   label: string;

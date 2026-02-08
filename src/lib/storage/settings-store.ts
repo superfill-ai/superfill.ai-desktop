@@ -1,7 +1,7 @@
 import { STORAGE_FILES } from "@/constants";
 import { createLogger } from "@/lib/logger";
 import { readFromStore, writeToStore } from "@/lib/storage/file-store";
-import type { AISettings, UISettings } from "@/types/settings";
+import type { AISettings, BrowserSettings, UISettings } from "@/types/settings";
 import { Theme } from "@/types/theme";
 
 const logger = createLogger("storage:settings");
@@ -21,6 +21,11 @@ const UI_SETTINGS_FALLBACK: UISettings = {
     lastTourCompletedAt: undefined,
     rightClickGuideSnoozedUntil: undefined,
     rightClickGuideDismissed: false,
+};
+
+const BROWSER_SETTINGS_FALLBACK: BrowserSettings = {
+    preferredBrowser: "auto",
+    persistProfile: true,
 };
 
 export async function getAISettings(): Promise<AISettings> {
@@ -45,4 +50,16 @@ export async function getUISettings(): Promise<UISettings> {
 export async function setUISettings(settings: UISettings): Promise<void> {
     logger.debug("Persisting UI settings", settings);
     await writeToStore(STORAGE_FILES.UI_SETTINGS, settings);
+}
+
+export async function getBrowserSettings(): Promise<BrowserSettings> {
+    return readFromStore<BrowserSettings>(
+        STORAGE_FILES.BROWSER_SETTINGS,
+        BROWSER_SETTINGS_FALLBACK,
+    );
+}
+
+export async function setBrowserSettings(settings: BrowserSettings): Promise<void> {
+    logger.debug("Persisting browser settings", settings);
+    await writeToStore(STORAGE_FILES.BROWSER_SETTINGS, settings);
 }

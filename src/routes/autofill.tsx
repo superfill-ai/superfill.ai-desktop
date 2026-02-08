@@ -24,7 +24,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ipc } from "@/ipc/manager";
-import type { AutofillResult, FieldMapping } from "@/types/autofill";
+import type {
+  AutofillResult,
+  FilledField,
+} from "@/lib/autofill/stagehand-engine";
 
 type RunState = "idle" | "running" | "done" | "error";
 
@@ -55,18 +58,18 @@ function AutofillPage() {
     setResult(null);
 
     try {
-      const res = await ipc.client.autofill.startAutofill({ url: trimmed });
+      const res = (await ipc.client.autofill.startAutofill({
+        url: trimmed,
+      })) as AutofillResult;
       setResult(res);
 
       if (res.success) {
-        const filled = res.mappings.filter(
-          (m) => m.value !== null && m.confidence >= 0.35,
-        ).length;
+        const count = res.filledFields.length;
         setStatusMessage(
-          `Completed — filled ${filled}/${res.mappings.length} fields in ${((res.processingTime ?? 0) / 1000).toFixed(1)}s`,
+          `Completed — filled ${count} of ${res.totalFieldsFound} fields in ${((res.processingTime ?? 0) / 1000).toFixed(1)}s`,
         );
         setRunState("done");
-        toast.success(`Autofill complete — ${filled} fields filled`);
+        toast.success(`Autofill complete — ${count} fields filled`);
       } else {
         setStatusMessage(res.error ?? "Autofill failed");
         setRunState("error");
@@ -100,6 +103,7 @@ function AutofillPage() {
           <h1 className="text-2xl font-semibold">Autofill</h1>
         </div>
       </div>
+
       <Card>
         <CardContent className="pt-6">
           <div className="flex gap-2">
@@ -156,12 +160,13 @@ function AutofillPage() {
         </Card>
       )}
 
-      {result && result.mappings.length > 0 && (
+      {result && result.filledFields.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Bot className="h-4 w-4" />
-              Field Mappings ({result.mappings.length})
+              Filled Fields ({result.filledFields.length} of{" "}
+              {result.totalFieldsFound})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -171,13 +176,15 @@ function AutofillPage() {
                   <TableRow>
                     <TableHead>Field</TableHead>
                     <TableHead>Value</TableHead>
-                    <TableHead className="w-[100px]">Confidence</TableHead>
-                    <TableHead>Reasoning</TableHead>
+                    <TableHead className="w-[100px]">Type</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {result.mappings.map((mapping) => (
-                    <MappingRow key={mapping.fieldOpid} mapping={mapping} />
+                  {result.filledFields.map((field, idx) => (
+                    <FieldRow
+                      key={`${field.label}-${idx}`}
+                      field={field}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -192,7 +199,7 @@ function AutofillPage() {
             <Bot className="mx-auto mb-3 h-12 w-12 opacity-30" />
             <p className="text-sm">
               Enter a URL above and click <strong>Start</strong> to launch
-              Stagehand.
+              Superfill.ai.
             </p>
             <p className="mt-1 text-xs">
               A Chromium window will open and the form will be filled
@@ -205,30 +212,17 @@ function AutofillPage() {
   );
 }
 
-function MappingRow({ mapping }: { mapping: FieldMapping }) {
-  const confidencePercent = Math.round(mapping.confidence * 100);
-  const variant: "default" | "secondary" | "destructive" | "outline" =
-    confidencePercent >= 80
-      ? "default"
-      : confidencePercent >= 50
-        ? "secondary"
-        : confidencePercent >= 35
-          ? "outline"
-          : "destructive";
-
+function FieldRow({ field }: { field: FilledField }) {
   return (
     <TableRow>
-      <TableCell className="font-mono text-xs">{mapping.fieldOpid}</TableCell>
-      <TableCell className="max-w-[200px] truncate text-sm">
-        {mapping.value ?? (
-          <span className="text-muted-foreground italic">—</span>
-        )}
+      <TableCell className="text-sm font-medium">{field.label}</TableCell>
+      <TableCell className="max-w-[250px] truncate text-sm">
+        {field.value}
       </TableCell>
       <TableCell>
-        <Badge variant={variant}>{confidencePercent}%</Badge>
-      </TableCell>
-      <TableCell className="max-w-[300px] truncate text-xs text-muted-foreground">
-        {mapping.reasoning}
+        {field.fieldType && (
+          <Badge variant="secondary">{field.fieldType}</Badge>
+        )}
       </TableCell>
     </TableRow>
   );

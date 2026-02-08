@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Loader2, ShieldQuestion, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import {
 } from "@/lib/providers/registry";
 import type { AIProvider } from "@/lib/providers/registry";
 import type { AISettings } from "@/types/settings";
+import { queryClient } from "@/lib/query";
 
 type ProviderFormState = Record<AIProvider, { key: string; model: string }>;
 
@@ -276,7 +277,6 @@ function ModelList({ provider }: { provider: AIProvider }) {
 }
 
 function AutofillPanel() {
-  const queryClient = useQueryClient();
   const { data: settings, isLoading } = useQuery({
     queryKey: ["ai-settings"],
     queryFn: () => ipc.client.settings.readAISettings(),

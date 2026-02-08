@@ -1,7 +1,8 @@
 import { os } from "@orpc/server";
-import { getAISettings, getUISettings, setAISettings, setUISettings } from "@/lib/storage/settings-store";
-import type { AISettings, UISettings } from "@/types/settings";
-import { setAISettingsInputSchema, setUISettingsInputSchema } from "./schemas";
+import { getBrowserSettings, getAISettings, getUISettings, setAISettings, setBrowserSettings, setUISettings } from "@/lib/storage/settings-store";
+import type { AISettings, BrowserSettings, UISettings } from "@/types/settings";
+import { detectInstalledBrowsers } from "@/lib/autofill/browser-paths";
+import { setAISettingsInputSchema, setBrowserSettingsInputSchema, setUISettingsInputSchema } from "./schemas";
 
 export const readAISettings = os.handler(async (): Promise<AISettings> => {
     return getAISettings();
@@ -24,3 +25,18 @@ export const writeUISettings = os
         await setUISettings(input.settings as UISettings);
         return getUISettings();
     });
+
+export const readBrowserSettings = os.handler(async (): Promise<BrowserSettings> => {
+    return getBrowserSettings();
+});
+
+export const writeBrowserSettings = os
+    .input(setBrowserSettingsInputSchema)
+    .handler(async ({ input }) => {
+        await setBrowserSettings(input.settings as BrowserSettings);
+        return getBrowserSettings();
+    });
+
+export const getInstalledBrowsers = os.handler(async () => {
+    return detectInstalledBrowsers();
+});
