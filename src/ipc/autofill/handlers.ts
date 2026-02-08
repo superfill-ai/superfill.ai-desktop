@@ -125,6 +125,16 @@ export const startAutofill = os
       );
       const result = await engine.runAutofill(url, memories);
       return result;
+    } catch (error) {
+      logger.error("Autofill engine error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      return {
+        success: false,
+        filledFields: [],
+        totalFieldsFound: 0,
+        error: errorMessage,
+      };
     } finally {
       await engine.close();
       activeEngine = null;

@@ -98,7 +98,7 @@ function AutofillPage() {
     <div className="flex h-full flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-muted-foreground text-sm">Stagehand</p>
+          <p className="text-muted-foreground text-sm">Superfill.ai</p>
           <h1 className="font-semibold text-2xl">Autofill</h1>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { app } from "electron";
 import { createLogger } from "@/lib/logger";
@@ -115,5 +115,20 @@ export function detectInstalledBrowsers(): {
 }
 
 export function getUserDataDir(): string {
-  return join(app.getPath("userData"), "superfill-browser-profile");
+  const userDataDir = join(
+    app.getPath("userData"),
+    "superfill-browser-profile",
+  );
+
+  if (!existsSync(userDataDir)) {
+    try {
+      mkdirSync(userDataDir, { recursive: true });
+      logger.info(`Created browser profile directory: ${userDataDir}`);
+    } catch (error) {
+      logger.error(`Failed to create browser profile directory: ${error}`);
+      throw error;
+    }
+  }
+
+  return userDataDir;
 }

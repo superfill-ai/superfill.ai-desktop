@@ -10,35 +10,44 @@ const STAGEHAND_ENV_KEYS: Partial<Record<AIProvider, string>> = {
   openai: "OPENAI_API_KEY",
   anthropic: "ANTHROPIC_API_KEY",
   gemini: "GOOGLE_API_KEY",
+  groq: "GROQ_API_KEY",
+  deepseek: "DEEPSEEK_API_KEY",
+  ollama: "OLLAMA_BASE_URL",
 };
 
 const STAGEHAND_PROVIDER_PREFIX: Record<AIProvider, string> = {
   openai: "openai",
   anthropic: "anthropic",
   gemini: "google",
-  groq: "openai",
-  deepseek: "openai",
-  ollama: "openai",
+  groq: "groq",
+  deepseek: "deepseek",
+  ollama: "ollama",
 };
 
 const DEFAULT_MODELS: Record<AIProvider, string> = {
-  openai: "openai/gpt-4o",
-  anthropic: "anthropic/claude-sonnet-4-20250514",
-  gemini: "google/gemini-2.0-flash",
-  groq: "openai/gpt-4o",
-  deepseek: "openai/gpt-4o",
-  ollama: "openai/gpt-4o",
+  openai: "gpt-4o",
+  anthropic: "claude-sonnet-4-20250514",
+  gemini: "gemini-2.0-flash",
+  groq: "llama-3.3-70b-versatile",
+  deepseek: "deepseek-chat",
+  ollama: "llama3.1",
 };
 
 function resolveStagehandModel(
   provider: AIProvider,
   modelName?: string,
 ): string {
+  const prefix = STAGEHAND_PROVIDER_PREFIX[provider];
+
   if (modelName) {
-    const prefix = STAGEHAND_PROVIDER_PREFIX[provider];
+    if (modelName.includes("/")) {
+      return modelName;
+    }
     return `${prefix}/${modelName}`;
   }
-  return DEFAULT_MODELS[provider];
+
+  const defaultModel = DEFAULT_MODELS[provider];
+  return `${prefix}/${defaultModel}`;
 }
 
 function setProviderEnvKey(provider: AIProvider, apiKey: string): void {
@@ -62,8 +71,6 @@ export interface AutofillResult {
   error?: string;
   processingTime?: number;
 }
-
-// ── Progress ──────────────────────────────────────────────────
 
 export type AutofillProgressState =
   | "idle"
@@ -153,48 +160,67 @@ export class StagehandEngine {
     modelName?: string,
     browserOptions?: BrowserLaunchOptions,
   ): Promise<void> {
-    logger.info("Launching Stagehand (LOCAL headed browser)");
-    this.emitProgress("launching", "Launching browser…");
+    try {
+      logger.info("Launching Stagehand (LOCAL headed browser)");
+      this.emitProgress("launching", "Launching browser…");
 
-    setProviderEnvKey(provider, apiKey);
-    const model = resolveStagehandModel(provider, modelName);
+      setProviderEnvKey(provider, apiKey);
+      const model = resolveStagehandModel(provider, modelName);
 
-    const localBrowserLaunchOptions: Record<string, unknown> = {
-      headless: false,
-      viewport: { width: 1440, height: 900 },
-    };
+      logger.info(`Using provider: ${provider}, model: ${model}`);
 
-    if (browserOptions?.executablePath) {
-      localBrowserLaunchOptions.executablePath = browserOptions.executablePath;
-      logger.info(`Using browser executable: ${browserOptions.executablePath}`);
+      const localBrowserLaunchOptions: Record<string, unknown> = {
+        headless: false,
+        viewport: { width: 1440, height: 900 },
+      };
+
+      if (browserOptions?.executablePath) {
+        localBrowserLaunchOptions.executablePath =
+          browserOptions.executablePath;
+        logger.info(
+          `Using browser executable: ${browserOptions.executablePath}`,
+        );
+      }
+
+      if (browserOptions?.userDataDir) {
+        localBrowserLaunchOptions.userDataDir = browserOptions.userDataDir;
+        localBrowserLaunchOptions.preserveUserDataDir =
+          browserOptions.preserveUserDataDir ?? true;
+        logger.info(`Using user data dir: ${browserOptions.userDataDir}`);
+      }
+
+      logger.info("Creating Stagehand instance...");
+      this.stagehand = new Stagehand({
+        env: "LOCAL",
+        model,
+        localBrowserLaunchOptions,
+        selfHeal: true,
+        disablePino: true,
+        logger: (line: LogLine) => {
+          if (line.level === 0) {
+            logger.error(line.message);
+          } else if (line.level === 1) {
+            logger.info(line.message);
+          } else {
+            logger.debug(line.message);
+          }
+        },
+      });
+
+      try {
+        logger.info("Initializing Stagehand...");
+        await this.stagehand.init();
+        logger.info(`Stagehand launched with model: ${model}`);
+      } catch (error) {
+        logger.error("Failed to initialize Stagehand:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to initialize Stagehand: ${errorMessage}`);
+      }
+    } catch (error) {
+      logger.error("Failed to launch Stagehand:", error);
+      throw error;
     }
-
-    if (browserOptions?.userDataDir) {
-      localBrowserLaunchOptions.userDataDir = browserOptions.userDataDir;
-      localBrowserLaunchOptions.preserveUserDataDir =
-        browserOptions.preserveUserDataDir ?? true;
-      logger.info(`Using user data dir: ${browserOptions.userDataDir}`);
-    }
-
-    this.stagehand = new Stagehand({
-      env: "LOCAL",
-      model,
-      localBrowserLaunchOptions,
-      selfHeal: true,
-      disablePino: true,
-      logger: (line: LogLine) => {
-        if (line.level === 0) {
-          logger.error(line.message);
-        } else if (line.level === 1) {
-          logger.info(line.message);
-        } else {
-          logger.debug(line.message);
-        }
-      },
-    });
-
-    await this.stagehand.init();
-    logger.info(`Stagehand launched with model: ${model}`);
   }
 
   async close(): Promise<void> {
