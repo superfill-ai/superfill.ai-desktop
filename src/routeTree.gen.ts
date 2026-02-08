@@ -9,11 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as MemoriesRouteImport } from './routes/memories'
 import { Route as AutofillRouteImport } from './routes/autofill'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as MemoriesRouteImport } from './routes/memories'
-import { Route as SettingsRouteImport } from './routes/settings'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemoriesRoute = MemoriesRouteImport.update({
+  id: '/memories',
+  path: '/memories',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AutofillRoute = AutofillRouteImport.update({
   id: '/autofill',
   path: '/autofill',
@@ -24,33 +34,23 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MemoriesRoute = MemoriesRouteImport.update({
-  id: '/memories',
-  path: '/memories',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
-  '/autofill': typeof AutofillRoute
   '/': typeof IndexRoute
+  '/autofill': typeof AutofillRoute
   '/memories': typeof MemoriesRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRoutesByTo {
-  '/autofill': typeof AutofillRoute
   '/': typeof IndexRoute
+  '/autofill': typeof AutofillRoute
   '/memories': typeof MemoriesRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/autofill': typeof AutofillRoute
   '/': typeof IndexRoute
+  '/autofill': typeof AutofillRoute
   '/memories': typeof MemoriesRoute
   '/settings': typeof SettingsRoute
 }
@@ -63,14 +63,28 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AutofillRoute: typeof AutofillRoute
   IndexRoute: typeof IndexRoute
+  AutofillRoute: typeof AutofillRoute
   MemoriesRoute: typeof MemoriesRoute
   SettingsRoute: typeof SettingsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/memories': {
+      id: '/memories'
+      path: '/memories'
+      fullPath: '/memories'
+      preLoaderRoute: typeof MemoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/autofill': {
       id: '/autofill'
       path: '/autofill'
@@ -85,26 +99,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/memories': {
-      id: '/memories'
-      path: '/memories'
-      fullPath: '/memories'
-      preLoaderRoute: typeof MemoriesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  AutofillRoute: AutofillRoute,
   IndexRoute: IndexRoute,
+  AutofillRoute: AutofillRoute,
   MemoriesRoute: MemoriesRoute,
   SettingsRoute: SettingsRoute,
 }

@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useMemories, useMemoryMutations } from "@/hooks/use-memories";
 import { allowedCategories } from "@/lib/copies";
+import type { AllowedCategory } from "@/types/memory";
 
 function MemoriesPage() {
   const { entries, loading } = useMemories();
@@ -19,7 +20,7 @@ function MemoriesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
-  const [category, setCategory] = useState<string>(allowedCategories[0]);
+  const [category, setCategory] = useState<AllowedCategory>(allowedCategories[0]);
   const [tags, setTags] = useState("");
 
   const handleCreate = async () => {
@@ -103,7 +104,7 @@ function MemoriesPage() {
                   <Label htmlFor="category">Category</Label>
                   <Select
                     value={category}
-                    onValueChange={(val) => setCategory(val)}
+                    onValueChange={(val) => setCategory(val as AllowedCategory)}
                   >
                     <SelectTrigger id="category">
                       <SelectValue placeholder="Choose category" />

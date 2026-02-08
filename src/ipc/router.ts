@@ -1,4 +1,5 @@
 import { app } from "./app";
+import { autofill } from "./autofill";
 import { memories } from "./memories";
 import { security } from "./security";
 import { settings } from "./settings";
@@ -14,4 +15,5 @@ export const router = {
   memories,
   settings,
   security,
+  autofill,
 };

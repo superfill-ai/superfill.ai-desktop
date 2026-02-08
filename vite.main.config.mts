@@ -8,4 +8,16 @@ export default defineConfig({
       "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      external: [
+        // Stagehand + Playwright are native Node modules that must stay unbundled
+        "@browserbasehq/stagehand",
+        "playwright",
+        "playwright-core",
+        "patchright-core",
+        "puppeteer-core",
+      ],
+    },
+  },
 });

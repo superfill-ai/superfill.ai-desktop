@@ -4,257 +4,257 @@ import type { WebsiteContext } from "./context";
 export type TrackableFieldType = (typeof TRACKABLE_FIELD_TYPES)[number];
 
 export type FormOpId = `__form__${string}` & {
-    readonly __brand: unique symbol;
+  readonly __brand: unique symbol;
 };
 export type FieldOpId = `__${number}` & { readonly __brand: unique symbol };
 
 export type DetectFormsResult =
-    | {
-        success: true;
-        forms: DetectedFormSnapshot[];
-        totalFields: number;
-        websiteContext: WebsiteContext;
-        frameInfo: FrameInfo;
-    }
-    | {
-        success: false;
-        forms: never[];
-        totalFields: 0;
-        error: string;
-        frameInfo: FrameInfo;
-    };
+  | {
+    success: true;
+    forms: DetectedFormSnapshot[];
+    totalFields: number;
+    websiteContext: WebsiteContext;
+    frameInfo: FrameInfo;
+  }
+  | {
+    success: false;
+    forms: never[];
+    totalFields: 0;
+    error: string;
+    frameInfo: FrameInfo;
+  };
 
 export interface FrameInfo {
-    isMainFrame: boolean;
-    frameUrl: string;
-    parentUrl: string;
-    frameDepth: number;
+  isMainFrame: boolean;
+  frameUrl: string;
+  parentUrl: string;
+  frameDepth: number;
 }
 
 export interface DetectedForm {
-    opid: FormOpId;
-    element: HTMLFormElement | null;
-    action: string;
-    method: string;
-    name: string;
-    fields: DetectedField[];
+  opid: FormOpId;
+  element: HTMLFormElement | null;
+  action: string;
+  method: string;
+  name: string;
+  fields: DetectedField[];
 }
 
 export interface DetectedFormSnapshot
-    extends Omit<DetectedForm, "element" | "fields"> {
-    fields: DetectedFieldSnapshot[];
+  extends Omit<DetectedForm, "element" | "fields"> {
+  fields: DetectedFieldSnapshot[];
 }
 
 export interface DetectedField {
-    opid: FieldOpId;
-    element: FormFieldElement;
-    metadata: FieldMetadata;
-    formOpid: FormOpId;
-    highlightIndex: number | null;
+  opid: FieldOpId;
+  element: FormFieldElement;
+  metadata: FieldMetadata;
+  formOpid: FormOpId;
+  highlightIndex: number | null;
 }
 
 export interface FieldMetadataSnapshot
-    extends Omit<FieldMetadata, "rect" | "options"> {
-    rect: DOMRectInit;
-    options?: SelectOptionSnapshot[];
+  extends Omit<FieldMetadata, "rect" | "options"> {
+  rect: DOMRectInit;
+  options?: SelectOptionSnapshot[];
 }
 
 export interface DetectedFieldSnapshot
-    extends Omit<DetectedField, "element" | "metadata"> {
-    frameId?: number;
-    metadata: FieldMetadataSnapshot;
+  extends Omit<DetectedField, "element" | "metadata"> {
+  frameId?: number;
+  metadata: FieldMetadataSnapshot;
 }
 
 export interface SelectOption {
-    value: string;
-    label: string | null;
-    element: HTMLOptionElement;
+  value: string;
+  label: string | null;
+  element: HTMLOptionElement;
 }
 
 export interface SelectOptionSnapshot {
-    value: string;
-    label: string | null;
+  value: string;
+  label: string | null;
 }
 
 export interface FieldMetadata {
-    id: string | null;
-    name: string | null;
-    className: string | null;
-    type: string;
+  id: string | null;
+  name: string | null;
+  className: string | null;
+  type: string;
 
-    labelTag: string | null;
-    labelData: string | null;
-    labelAria: string | null;
-    labelLeft: string | null;
-    labelTop: string | null;
+  labelTag: string | null;
+  labelData: string | null;
+  labelAria: string | null;
+  labelLeft: string | null;
+  labelTop: string | null;
 
-    placeholder: string | null;
-    helperText: string | null;
-    autocomplete: string | null;
+  placeholder: string | null;
+  helperText: string | null;
+  autocomplete: string | null;
 
-    required: boolean;
-    disabled: boolean;
-    readonly: boolean;
-    maxLength: number | null;
+  required: boolean;
+  disabled: boolean;
+  readonly: boolean;
+  maxLength: number | null;
 
-    rect: DOMRect;
+  rect: DOMRect;
 
-    currentValue: string;
+  currentValue: string;
 
-    fieldType: FieldType;
-    fieldPurpose: FieldPurpose;
+  fieldType: FieldType;
+  fieldPurpose: FieldPurpose;
 
-    isVisible: boolean;
-    isTopElement: boolean;
-    isInteractive: boolean;
+  isVisible: boolean;
+  isTopElement: boolean;
+  isInteractive: boolean;
 
-    options?: SelectOption[];
+  options?: SelectOption[];
 }
 
 export type FieldType =
-    | "text"
-    | "email"
-    | "tel"
-    | "url"
-    | "textarea"
-    | "select"
-    | "checkbox"
-    | "date"
-    | "number"
-    | "password";
+  | "text"
+  | "email"
+  | "tel"
+  | "url"
+  | "textarea"
+  | "select"
+  | "checkbox"
+  | "date"
+  | "number"
+  | "password";
 
 export type FieldPurpose =
-    | "name"
-    | "email"
-    | "phone"
-    | "address"
-    | "city"
-    | "state"
-    | "zip"
-    | "country"
-    | "company"
-    | "title"
-    | "unknown";
+  | "name"
+  | "email"
+  | "phone"
+  | "address"
+  | "city"
+  | "state"
+  | "zip"
+  | "country"
+  | "company"
+  | "title"
+  | "unknown";
 
 export type FormFieldElement =
-    | HTMLInputElement
-    | HTMLTextAreaElement
-    | HTMLSelectElement;
+  | HTMLInputElement
+  | HTMLTextAreaElement
+  | HTMLSelectElement;
 
 export interface CompressedFieldData {
-    opid: string;
-    highlightIndex: number | null;
-    type: FieldType;
-    purpose: FieldPurpose;
-    labels: string[];
-    context: string;
-    options?: SelectOptionSnapshot[];
+  opid: string;
+  highlightIndex: number | null;
+  type: FieldType;
+  purpose: FieldPurpose;
+  labels: string[];
+  context: string;
+  options?: SelectOptionSnapshot[];
 }
 
 export interface CompressedMemoryData {
-    id: string;
-    question: string;
-    answer: string;
-    category: string;
+  id: string;
+  question: string;
+  answer: string;
+  category: string;
 }
 
 export interface FieldMapping {
-    fieldOpid: string;
-    value: string | null;
-    confidence: number;
-    reasoning: string;
-    autoFill?: boolean;
+  fieldOpid: string;
+  value: string | null;
+  confidence: number;
+  reasoning: string;
+  autoFill?: boolean;
 }
 
 export interface AutofillResult {
-    success: boolean;
-    mappings: FieldMapping[];
-    error?: string;
-    processingTime?: number;
+  success: boolean;
+  mappings: FieldMapping[];
+  error?: string;
+  processingTime?: number;
 }
 
 export interface PreviewFieldData {
-    fieldOpid: FieldOpId;
-    formOpid: FormOpId;
-    metadata: FieldMetadataSnapshot;
-    mapping: FieldMapping;
-    primaryLabel: string;
+  fieldOpid: FieldOpId;
+  formOpid: FormOpId;
+  metadata: FieldMetadataSnapshot;
+  mapping: FieldMapping;
+  primaryLabel: string;
 }
 
 export interface PreviewSidebarPayload {
-    forms: DetectedFormSnapshot[];
-    mappings: FieldMapping[];
-    processingTime?: number;
-    sessionId: string;
+  forms: DetectedFormSnapshot[];
+  mappings: FieldMapping[];
+  processingTime?: number;
+  sessionId: string;
 }
 
 export type AutofillProgressState =
-    | "idle"
-    | "detecting"
-    | "analyzing"
-    | "matching"
-    | "showing-preview"
-    | "filling"
-    | "completed"
-    | "failed";
+  | "idle"
+  | "detecting"
+  | "analyzing"
+  | "matching"
+  | "showing-preview"
+  | "filling"
+  | "completed"
+  | "failed";
 
 export interface AutofillProgress {
-    state: AutofillProgressState;
-    message: string;
-    fieldsDetected?: number;
-    fieldsMatched?: number;
-    error?: string;
+  state: AutofillProgressState;
+  message: string;
+  fieldsDetected?: number;
+  fieldsMatched?: number;
+  error?: string;
 }
 
 export interface CapturedFieldData {
-    fieldOpid: FieldOpId;
-    formOpid: FormOpId;
-    question: string;
-    answer: string;
-    timestamp: number;
-    wasAIFilled: boolean;
-    originalAIValue?: string;
-    aiConfidence?: number;
-    fieldMetadata: {
-        type: FieldType;
-        purpose: FieldPurpose;
-        labels: string[];
-        placeholder?: string;
-        required: boolean;
-    };
+  fieldOpid: FieldOpId;
+  formOpid: FormOpId;
+  question: string;
+  answer: string;
+  timestamp: number;
+  wasAIFilled: boolean;
+  originalAIValue?: string;
+  aiConfidence?: number;
+  fieldMetadata: {
+    type: FieldType;
+    purpose: FieldPurpose;
+    labels: string[];
+    placeholder?: string;
+    required: boolean;
+  };
 }
 
 export interface TrackedFieldData {
-    fieldOpid: FieldOpId;
-    formOpid: FormOpId;
-    value: string;
-    timestamp: number;
-    wasAIFilled: boolean;
-    originalAIValue?: string;
-    aiConfidence?: number;
-    metadata: FieldMetadataSnapshot;
+  fieldOpid: FieldOpId;
+  formOpid: FormOpId;
+  value: string;
+  timestamp: number;
+  wasAIFilled: boolean;
+  originalAIValue?: string;
+  aiConfidence?: number;
+  metadata: FieldMetadataSnapshot;
 }
 
 export interface CaptureSession {
-    sessionId: string;
-    url: string;
-    pageTitle: string;
-    trackedFields: Map<FieldOpId, TrackedFieldData>;
-    startedAt: number;
+  sessionId: string;
+  url: string;
+  pageTitle: string;
+  trackedFields: Map<FieldOpId, TrackedFieldData>;
+  startedAt: number;
 }
 
 export interface FilterStats {
-    total: number;
-    filtered: number;
-    reasons: {
-        noQuality: number;
-        duplicate: number;
-        unknownUnlabeled: number;
-    };
+  total: number;
+  filtered: number;
+  reasons: {
+    noQuality: number;
+    duplicate: number;
+    unknownUnlabeled: number;
+  };
 }
 
 export type FieldsToFillData = Array<{
-    fieldOpid: FieldOpId;
-    value: string;
-    confidence?: number;
+  fieldOpid: FieldOpId;
+  value: string;
+  confidence?: number;
 }>;
