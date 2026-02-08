@@ -1,5 +1,7 @@
 import type React from "react";
+import { APP_NAME } from "@/constants";
 import DragWindowRegion from "@/components/drag-window-region";
+import NavigationMenu from "@/components/navigation-menu";
 
 export default function BaseLayout({
   children,
@@ -7,9 +9,14 @@ export default function BaseLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <DragWindowRegion title="electron-shadcn" />
-      <main className="h-screen p-2 pb-20">{children}</main>
-    </>
+    <div className="flex h-screen flex-col bg-background text-foreground">
+      <DragWindowRegion title={APP_NAME} />
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="w-64 border-r bg-muted/40">
+          <NavigationMenu />
+        </aside>
+        <main className="flex-1 overflow-auto p-6">{children}</main>
+      </div>
+    </div>
   );
 }

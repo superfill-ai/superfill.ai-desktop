@@ -1,59 +1,65 @@
-import { SiElectron, SiReact, SiVite } from "@icons-pack/react-simple-icons";
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, useTransition } from "react";
-import { useTranslation } from "react-i18next";
-import { getAppVersion } from "@/actions/app";
-import ExternalLink from "@/components/external-link";
-import LangToggle from "@/components/lang-toggle";
-import NavigationMenu from "@/components/navigation-menu";
-import ToggleTheme from "@/components/toggle-theme";
-
-/*
- * Update this page to modify your home page.
- * You can delete this file component to start from a blank page.
- */
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { Brain, Settings, Zap } from "lucide-react";
 
 function HomePage() {
-  const iconSize = 48;
-
-  const [appVersion, setAppVersion] = useState("0.0.0");
-  const [, startGetAppVersion] = useTransition();
-  const { t } = useTranslation();
-
-  useEffect(
-    () => startGetAppVersion(() => getAppVersion().then(setAppVersion)),
-    []
-  );
-
   return (
-    <>
-      <NavigationMenu />
-      <div className="flex h-full flex-col items-center justify-center">
-        <div className="flex flex-col items-end justify-center gap-0.5">
-          <div className="inline-flex gap-2">
-            <SiReact size={iconSize} />
-            <SiVite size={iconSize} />
-            <SiElectron size={iconSize} />
-          </div>
-          <span className="flex items-end justify-end">
-            <h1 className="font-bold font-mono text-4xl">{t("appName")}</h1>
-            <p className="text-muted-foreground text-sm">v{appVersion}</p>
-          </span>
-          <div className="flex w-full justify-between">
-            <ExternalLink
-              className="flex gap-2 text-muted-foreground text-sm"
-              href="https://github.com/LuanRoger"
-            >
-              {t("madeBy")}
-            </ExternalLink>
-            <div className="flex items-center gap-2">
-              <LangToggle />
-              <ToggleTheme />
-            </div>
-          </div>
-        </div>
+    <div className="flex h-full flex-col gap-8">
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">Superfill.ai Desktop</p>
+        <h1 className="text-3xl font-bold">Welcome back</h1>
+        <p className="text-muted-foreground">
+          Manage memories, configure BYOK providers, and launch Stagehand autofill
+          from one place.
+        </p>
       </div>
-    </>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Link
+          to="/memories"
+          className="group flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-semibold">
+              <Brain className="h-4 w-4" aria-hidden /> Memories
+            </div>
+            <span className="text-muted-foreground text-xs">Open</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Add, edit, and import the answers Stagehand will use to fill forms.
+          </p>
+        </Link>
+
+        <Link
+          to="/autofill"
+          className="group flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-semibold">
+              <Zap className="h-4 w-4" aria-hidden /> Autofill
+            </div>
+            <span className="text-muted-foreground text-xs">Open</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Launch Stagehand, detect fields, preview matches, and fill in one click.
+          </p>
+        </Link>
+
+        <Link
+          to="/settings"
+          className="group flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-semibold">
+              <Settings className="h-4 w-4" aria-hidden /> Settings
+            </div>
+            <span className="text-muted-foreground text-xs">Open</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Connect AI providers, set default models, and tune autofill behavior.
+          </p>
+        </Link>
+      </div>
+    </div>
   );
 }
 
