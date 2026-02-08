@@ -303,6 +303,5 @@
 }
 
 .toaster.group [data-description] {
-  /* biome-ignore lint/complexity/noImportantStyles: it's fine here */
   color: var(--color-popover-foreground) !important;
 }

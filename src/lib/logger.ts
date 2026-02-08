@@ -9,7 +9,7 @@ const isDebugEnv =
 export const DEBUG = Boolean(isDebugEnv);
 
 class Logger {
-  private context: string;
+  private readonly context: string;
 
   constructor(context = "Superfill") {
     this.context = context;

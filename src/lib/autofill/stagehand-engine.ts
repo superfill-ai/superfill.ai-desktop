@@ -1,4 +1,4 @@
-import { Stagehand, type LogLine } from "@browserbasehq/stagehand";
+import { type LogLine, Stagehand } from "@browserbasehq/stagehand";
 import { z } from "zod";
 import { createLogger } from "@/lib/logger";
 import type { AIProvider } from "@/lib/providers/registry";
@@ -32,7 +32,7 @@ const DEFAULT_MODELS: Record<AIProvider, string> = {
 
 function resolveStagehandModel(
   provider: AIProvider,
-  modelName?: string,
+  modelName?: string
 ): string {
   if (modelName) {
     const prefix = STAGEHAND_PROVIDER_PREFIX[provider];
@@ -86,8 +86,15 @@ function formatMemoriesForPrompt(memories: MemoryEntry[]): string {
   const grouped = new Map<string, MemoryEntry[]>();
   for (const m of memories) {
     const cat = m.category;
-    if (!grouped.has(cat)) grouped.set(cat, []);
-    grouped.get(cat)!.push(m);
+    if (!grouped.has(cat)) {
+      grouped.set(cat, []);
+    }
+
+    const arr = grouped.get(cat);
+
+    if (arr) {
+      arr.push(m);
+    }
   }
 
   const lines: string[] = ["## User's Personal Data\n"];
@@ -112,30 +119,39 @@ const FilledFieldsSchema = z.object({
       label: z
         .string()
         .describe("The visible label or description of the field"),
-      value: z
-        .string()
-        .describe("The current value entered in the field"),
+      value: z.string().describe("The current value entered in the field"),
       fieldType: z
         .string()
         .optional()
         .describe("The type of field (text, email, select, etc.)"),
-    }),
+    })
   ),
 });
 
+export interface BrowserLaunchOptions {
+  executablePath?: string;
+  userDataDir?: string;
+  preserveUserDataDir?: boolean;
+}
+
 export class StagehandEngine {
   private stagehand: InstanceType<typeof Stagehand> | null = null;
-  private onProgress: ProgressCallback;
+  private readonly onProgress: ProgressCallback;
   private aborted = false;
 
   constructor(onProgress?: ProgressCallback) {
-    this.onProgress = onProgress ?? (() => { });
+    this.onProgress =
+      onProgress ??
+      (() => {
+        /* noop */
+      });
   }
 
   async launch(
     provider: AIProvider,
     apiKey: string,
     modelName?: string,
+    browserOptions?: BrowserLaunchOptions
   ): Promise<void> {
     logger.info("Launching Stagehand (LOCAL headed browser)");
     this.emitProgress("launching", "Launching browser…");
@@ -143,19 +159,37 @@ export class StagehandEngine {
     setProviderEnvKey(provider, apiKey);
     const model = resolveStagehandModel(provider, modelName);
 
+    const localBrowserLaunchOptions: Record<string, unknown> = {
+      headless: false,
+      viewport: { width: 1440, height: 900 },
+    };
+
+    if (browserOptions?.executablePath) {
+      localBrowserLaunchOptions.executablePath = browserOptions.executablePath;
+      logger.info(`Using browser executable: ${browserOptions.executablePath}`);
+    }
+
+    if (browserOptions?.userDataDir) {
+      localBrowserLaunchOptions.userDataDir = browserOptions.userDataDir;
+      localBrowserLaunchOptions.preserveUserDataDir =
+        browserOptions.preserveUserDataDir ?? true;
+      logger.info(`Using user data dir: ${browserOptions.userDataDir}`);
+    }
+
     this.stagehand = new Stagehand({
       env: "LOCAL",
       model,
-      localBrowserLaunchOptions: {
-        headless: false,
-        viewport: { width: 1440, height: 900 },
-      },
+      localBrowserLaunchOptions,
       selfHeal: true,
       disablePino: true,
       logger: (line: LogLine) => {
-        if (line.level === 0) logger.error(line.message);
-        else if (line.level === 1) logger.info(line.message);
-        else logger.debug(line.message);
+        if (line.level === 0) {
+          logger.error(line.message);
+        } else if (line.level === 1) {
+          logger.info(line.message);
+        } else {
+          logger.debug(line.message);
+        }
       },
     });
 
@@ -177,7 +211,7 @@ export class StagehandEngine {
 
   async runAutofill(
     url: string,
-    memories: MemoryEntry[],
+    memories: MemoryEntry[]
   ): Promise<AutofillResult> {
     const startTime = performance.now();
 
@@ -186,14 +220,18 @@ export class StagehandEngine {
 
       this.emitProgress("navigating", `Navigating to ${url}…`);
       const page = sh.context.pages()[0];
-      if (!page) throw new Error("No page available in Stagehand context");
+      if (!page) {
+        throw new Error("No page available in Stagehand context");
+      }
       await page.goto(url, { waitUntil: "domcontentloaded" });
-      await new Promise((r) => setTimeout(r, 2_000));
-      if (this.aborted) return this.abortedResult(startTime);
+      await new Promise((r) => setTimeout(r, 2000));
+      if (this.aborted) {
+        return this.abortedResult(startTime);
+      }
 
       this.emitProgress("observing", "Discovering form fields…");
       const observedFields = await sh.observe(
-        "Find all visible, interactive form fields on this page including text inputs, email inputs, phone inputs, textareas, dropdowns/selects, checkboxes, date pickers, and radio buttons. Exclude hidden fields and submit/cancel buttons.",
+        "Find all visible, interactive form fields on this page including text inputs, email inputs, phone inputs, textareas, dropdowns/selects, checkboxes, date pickers, and radio buttons. Exclude hidden fields and submit/cancel buttons."
       );
       const totalFields = observedFields.length;
       logger.info(`Observed ${totalFields} form fields`);
@@ -208,11 +246,13 @@ export class StagehandEngine {
           processingTime: performance.now() - startTime,
         };
       }
-      if (this.aborted) return this.abortedResult(startTime);
+      if (this.aborted) {
+        return this.abortedResult(startTime);
+      }
 
       this.emitProgress(
         "filling",
-        `Filling ${totalFields} form fields with your data…`,
+        `Filling ${totalFields} form fields with your data…`
       );
       const memoryContext = formatMemoriesForPrompt(memories);
 
@@ -222,11 +262,13 @@ export class StagehandEngine {
       } catch (agentErr) {
         logger.warn(
           "Agent strategy failed, trying observe+act fallback:",
-          agentErr,
+          agentErr
         );
         filledFields = await this.fillWithObserveAct(memories);
       }
-      if (this.aborted) return this.abortedResult(startTime);
+      if (this.aborted) {
+        return this.abortedResult(startTime);
+      }
 
       if (filledFields.length === 0) {
         this.emitProgress("extracting", "Verifying filled fields…");
@@ -236,7 +278,7 @@ export class StagehandEngine {
       const elapsed = performance.now() - startTime;
       this.emitProgress(
         "completed",
-        `Done — filled ${filledFields.length} of ${totalFields} fields in ${(elapsed / 1000).toFixed(1)}s`,
+        `Done — filled ${filledFields.length} of ${totalFields} fields in ${(elapsed / 1000).toFixed(1)}s`
       );
 
       return {
@@ -246,8 +288,7 @@ export class StagehandEngine {
         processingTime: elapsed,
       };
     } catch (error) {
-      const msg =
-        error instanceof Error ? error.message : "Unknown error";
+      const msg = error instanceof Error ? error.message : "Unknown error";
       logger.error("Autofill pipeline failed:", error);
       this.emitProgress("failed", `Error: ${msg}`);
       return {
@@ -260,9 +301,7 @@ export class StagehandEngine {
     }
   }
 
-  private async fillWithAgent(
-    memoryContext: string,
-  ): Promise<FilledField[]> {
+  private async fillWithAgent(memoryContext: string): Promise<FilledField[]> {
     const sh = this.requireStagehand();
 
     const systemPrompt = `You are an expert form-filling assistant. Use the following personal data to fill out forms accurately.
@@ -285,7 +324,7 @@ Rules:
     });
 
     const result = await agent.execute(
-      "Fill out all the form fields on this page using the personal data provided. Fill every field where you have matching data. Do not submit the form.",
+      "Fill out all the form fields on this page using the personal data provided. Fill every field where you have matching data. Do not submit the form."
     );
 
     logger.info("Agent completed:", JSON.stringify(result));
@@ -294,20 +333,22 @@ Rules:
   }
 
   private async fillWithObserveAct(
-    memories: MemoryEntry[],
+    memories: MemoryEntry[]
   ): Promise<FilledField[]> {
     const sh = this.requireStagehand();
     const filled: FilledField[] = [];
 
     for (const memory of memories) {
-      if (this.aborted) break;
+      if (this.aborted) {
+        break;
+      }
 
       const label = memory.question || memory.category;
 
       try {
         const result = await sh.act(
           `Find a form field that asks for "${label}" and type %value% into it. If no matching field exists, do nothing.`,
-          { variables: { value: memory.answer } },
+          { variables: { value: memory.answer } }
         );
 
         if (result.success) {
@@ -318,9 +359,7 @@ Rules:
       }
     }
 
-    return filled.length > 0
-      ? await this.extractFilledFields()
-      : filled;
+    return filled.length > 0 ? await this.extractFilledFields() : filled;
   }
 
   private async extractFilledFields(): Promise<FilledField[]> {
@@ -328,7 +367,7 @@ Rules:
     try {
       const result = await sh.extract(
         "Extract all form fields that currently have a non-empty value. For each, give the visible label and the current value.",
-        FilledFieldsSchema,
+        FilledFieldsSchema
       );
       return result.fields;
     } catch (err) {
@@ -344,10 +383,7 @@ Rules:
     return this.stagehand;
   }
 
-  private emitProgress(
-    state: AutofillProgressState,
-    message: string,
-  ): void {
+  private emitProgress(state: AutofillProgressState, message: string): void {
     this.onProgress({ state, message });
     logger.info(`[${state}] ${message}`);
   }

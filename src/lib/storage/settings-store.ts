@@ -7,59 +7,61 @@ import { Theme } from "@/types/theme";
 const logger = createLogger("storage:settings");
 
 const AI_SETTINGS_FALLBACK: AISettings = {
-    autoFillEnabled: true,
-    autopilotMode: false,
-    confidenceThreshold: 0.6,
-    contextMenuEnabled: true,
+  autoFillEnabled: true,
+  autopilotMode: false,
+  confidenceThreshold: 0.6,
+  contextMenuEnabled: true,
 };
 
 const UI_SETTINGS_FALLBACK: UISettings = {
-    theme: Theme.DEFAULT,
-    onboardingCompleted: false,
-    extensionVersion: "0.0.0",
-    completedTours: [],
-    lastTourCompletedAt: undefined,
-    rightClickGuideSnoozedUntil: undefined,
-    rightClickGuideDismissed: false,
+  theme: Theme.DEFAULT,
+  onboardingCompleted: false,
+  extensionVersion: "0.0.0",
+  completedTours: [],
+  lastTourCompletedAt: undefined,
+  rightClickGuideSnoozedUntil: undefined,
+  rightClickGuideDismissed: false,
 };
 
 const BROWSER_SETTINGS_FALLBACK: BrowserSettings = {
-    preferredBrowser: "auto",
-    persistProfile: true,
+  preferredBrowser: "auto",
+  persistProfile: true,
 };
 
-export async function getAISettings(): Promise<AISettings> {
-    return readFromStore<AISettings>(
-        STORAGE_FILES.AI_SETTINGS,
-        AI_SETTINGS_FALLBACK,
-    );
+export function getAISettings(): Promise<AISettings> {
+  return readFromStore<AISettings>(
+    STORAGE_FILES.AI_SETTINGS,
+    AI_SETTINGS_FALLBACK
+  );
 }
 
 export async function setAISettings(settings: AISettings): Promise<void> {
-    logger.debug("Persisting AI settings", settings);
-    await writeToStore(STORAGE_FILES.AI_SETTINGS, settings);
+  logger.debug("Persisting AI settings", settings);
+  await writeToStore(STORAGE_FILES.AI_SETTINGS, settings);
 }
 
-export async function getUISettings(): Promise<UISettings> {
-    return readFromStore<UISettings>(
-        STORAGE_FILES.UI_SETTINGS,
-        UI_SETTINGS_FALLBACK,
-    );
+export function getUISettings(): Promise<UISettings> {
+  return readFromStore<UISettings>(
+    STORAGE_FILES.UI_SETTINGS,
+    UI_SETTINGS_FALLBACK
+  );
 }
 
 export async function setUISettings(settings: UISettings): Promise<void> {
-    logger.debug("Persisting UI settings", settings);
-    await writeToStore(STORAGE_FILES.UI_SETTINGS, settings);
+  logger.debug("Persisting UI settings", settings);
+  await writeToStore(STORAGE_FILES.UI_SETTINGS, settings);
 }
 
-export async function getBrowserSettings(): Promise<BrowserSettings> {
-    return readFromStore<BrowserSettings>(
-        STORAGE_FILES.BROWSER_SETTINGS,
-        BROWSER_SETTINGS_FALLBACK,
-    );
+export function getBrowserSettings(): Promise<BrowserSettings> {
+  return readFromStore<BrowserSettings>(
+    STORAGE_FILES.BROWSER_SETTINGS,
+    BROWSER_SETTINGS_FALLBACK
+  );
 }
 
-export async function setBrowserSettings(settings: BrowserSettings): Promise<void> {
-    logger.debug("Persisting browser settings", settings);
-    await writeToStore(STORAGE_FILES.BROWSER_SETTINGS, settings);
+export async function setBrowserSettings(
+  settings: BrowserSettings
+): Promise<void> {
+  logger.debug("Persisting browser settings", settings);
+  await writeToStore(STORAGE_FILES.BROWSER_SETTINGS, settings);
 }

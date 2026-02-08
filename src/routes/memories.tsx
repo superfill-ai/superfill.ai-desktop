@@ -1,13 +1,33 @@
-import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useMemories, useMemoryMutations } from "@/hooks/use-memories";
 import { allowedCategories } from "@/lib/copies";
@@ -20,7 +40,9 @@ function MemoriesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
-  const [category, setCategory] = useState<AllowedCategory>(allowedCategories[0]);
+  const [category, setCategory] = useState<AllowedCategory>(
+    allowedCategories[0]
+  );
   const [tags, setTags] = useState("");
 
   const handleCreate = async () => {
@@ -46,7 +68,8 @@ function MemoriesPage() {
       setAnswer("");
       setTags("");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to add memory";
+      const message =
+        error instanceof Error ? error.message : "Failed to add memory";
       toast.error(message);
     }
   };
@@ -56,7 +79,8 @@ function MemoriesPage() {
       await deleteEntry.mutateAsync(id);
       toast.success("Memory deleted");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to delete memory";
+      const message =
+        error instanceof Error ? error.message : "Failed to delete memory";
       toast.error(message);
     }
   };
@@ -65,13 +89,13 @@ function MemoriesPage() {
     <div className="flex h-full flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">Knowledge base</p>
-          <h1 className="text-2xl font-semibold">Memories</h1>
+          <p className="text-muted-foreground text-sm">Knowledge base</p>
+          <h1 className="font-semibold text-2xl">Memories</h1>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog onOpenChange={setDialogOpen} open={dialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm">
-              <Plus className="mr-2 h-4 w-4" aria-hidden />
+              <Plus aria-hidden className="mr-2 h-4 w-4" />
               Add memory
             </Button>
           </DialogTrigger>
@@ -84,27 +108,27 @@ function MemoriesPage() {
                 <Label htmlFor="question">Question (optional)</Label>
                 <Input
                   id="question"
+                  onChange={(e) => setQuestion(e.target.value)}
                   placeholder="What is your email?"
                   value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="answer">Answer</Label>
                 <Textarea
                   id="answer"
-                  placeholder="you@example.com"
-                  value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
+                  placeholder="you@example.com"
                   rows={3}
+                  value={answer}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="category">Category</Label>
                   <Select
-                    value={category}
                     onValueChange={(val) => setCategory(val as AllowedCategory)}
+                    value={category}
                   >
                     <SelectTrigger id="category">
                       <SelectValue placeholder="Choose category" />
@@ -122,15 +146,15 @@ function MemoriesPage() {
                   <Label htmlFor="tags">Tags (comma separated)</Label>
                   <Input
                     id="tags"
+                    onChange={(e) => setTags(e.target.value)}
                     placeholder="work, contact"
                     value={tags}
-                    onChange={(e) => setTags(e.target.value)}
                   />
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={handleCreate} disabled={addEntry.isPending}>
+              <Button disabled={addEntry.isPending} onClick={handleCreate}>
                 {addEntry.isPending ? "Saving..." : "Save"}
               </Button>
             </DialogFooter>
@@ -146,50 +170,58 @@ function MemoriesPage() {
               <TableHead>Answer</TableHead>
               <TableHead className="w-[10%]">Category</TableHead>
               <TableHead className="w-[10%]">Tags</TableHead>
-              <TableHead className="w-[80px]"></TableHead>
+              <TableHead className="w-[80px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? (
+            {loading && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell
+                  className="text-center text-muted-foreground"
+                  colSpan={5}
+                >
                   Loading...
                 </TableCell>
               </TableRow>
-            ) : entries.length === 0 ? (
+            )}
+            {!loading && entries.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell
+                  className="text-center text-muted-foreground"
+                  colSpan={5}
+                >
                   No memories yet. Add your first one.
                 </TableCell>
               </TableRow>
-            ) : (
+            )}
+            {!loading &&
+              entries.length > 0 &&
               entries.map((entry) => (
                 <TableRow key={entry.id}>
-                  <TableCell className="align-top text-sm text-muted-foreground">
+                  <TableCell className="align-top text-muted-foreground text-sm">
                     {entry.question || "—"}
                   </TableCell>
                   <TableCell className="align-top font-medium">
                     {entry.answer}
                   </TableCell>
-                  <TableCell className="align-top capitalize text-sm text-muted-foreground">
+                  <TableCell className="align-top text-muted-foreground text-sm capitalize">
                     {entry.category}
                   </TableCell>
-                  <TableCell className="align-top text-sm text-muted-foreground">
+                  <TableCell className="align-top text-muted-foreground text-sm">
                     {entry.tags.join(", ")}
                   </TableCell>
-                  <TableCell className="align-top text-right">
+                  <TableCell className="text-right align-top">
                     <Button
-                      variant="ghost"
-                      size="icon"
                       aria-label="Delete"
                       onClick={() => handleDelete(entry.id)}
+                      size="icon"
+                      variant="ghost"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
+              ))}
           </TableBody>
         </Table>
       </div>

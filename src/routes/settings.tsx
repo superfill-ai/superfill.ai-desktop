@@ -1,35 +1,59 @@
-import { useEffect, useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import { Loader2, ShieldQuestion, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { ipc } from "@/ipc/manager";
-import { useDefaultModel, useProviderModels } from "@/hooks/use-models";
+import { useProviderModels } from "@/hooks/use-models";
 import {
   useDeleteApiKey,
   useProviderKeyStatuses,
   useSaveApiKeyWithModel,
 } from "@/hooks/use-provider-keys";
+import { ipc } from "@/ipc/manager";
+import type { AIProvider } from "@/lib/providers/registry";
 import {
   AI_PROVIDERS,
   getProviderConfig,
   validateProviderKey,
 } from "@/lib/providers/registry";
-import type { AIProvider } from "@/lib/providers/registry";
-import type { AISettings } from "@/types/settings";
 import { queryClient } from "@/lib/query";
+import type { AISettings } from "@/types/settings";
 
 type ProviderFormState = Record<AIProvider, { key: string; model: string }>;
+
+const getDefaultModel = (provider: AIProvider): string => {
+  const defaults: Record<AIProvider, string> = {
+    openai: "gpt-5-nano",
+    anthropic: "claude-haiku-4-5-latest",
+    groq: "llama-4-maverick",
+    deepseek: "deepseek-v3",
+    gemini: "gemini-2.5-flash",
+    ollama: "llama3.2",
+  };
+  return defaults[provider];
+};
 
 function ProvidersPanel() {
   const { data: statuses, isLoading } = useProviderKeyStatuses();
@@ -40,7 +64,7 @@ function ProvidersPanel() {
     return AI_PROVIDERS.reduce((acc, provider) => {
       acc[provider] = {
         key: "",
-        model: useDefaultModel(provider),
+        model: getDefaultModel(provider),
       };
       return acc;
     }, {} as ProviderFormState);
@@ -51,7 +75,7 @@ function ProvidersPanel() {
   const handleChange = (
     provider: AIProvider,
     field: "key" | "model",
-    value: string,
+    value: string
   ) => {
     setForm((prev) => ({
       ...prev,
@@ -66,14 +90,19 @@ function ProvidersPanel() {
     <div className="grid gap-4 md:grid-cols-2">
       {AI_PROVIDERS.map((provider) => (
         <ProviderCard
-          key={provider}
-          provider={provider}
-          hasKey={Boolean(statuses?.[provider])}
-          isLoading={isLoading}
-          saving={saveKey.isPending}
           deleting={deleteKey.isPending}
           formValue={form[provider]}
+          hasKey={Boolean(statuses?.[provider])}
+          isLoading={isLoading}
+          key={provider}
           onChange={handleChange}
+          onDelete={async () => {
+            await deleteKey.mutateAsync(provider);
+            setForm((prev) => ({
+              ...prev,
+              [provider]: { key: "", model: getDefaultModel(provider) },
+            }));
+          }}
           onSave={async () => {
             const config = getProviderConfig(provider);
             const { key, model } = form[provider];
@@ -89,13 +118,8 @@ function ProvidersPanel() {
               defaultModel: model,
             });
           }}
-          onDelete={async () => {
-            await deleteKey.mutateAsync(provider);
-            setForm((prev) => ({
-              ...prev,
-              [provider]: { key: "", model: useDefaultModel(provider) },
-            }));
-          }}
+          provider={provider}
+          saving={saveKey.isPending}
         />
       ))}
     </div>
@@ -119,12 +143,17 @@ function ProviderCard({
   saving: boolean;
   deleting: boolean;
   formValue: { key: string; model: string };
-  onChange: (provider: AIProvider, field: "key" | "model", value: string) => void;
+  onChange: (
+    provider: AIProvider,
+    field: "key" | "model",
+    value: string
+  ) => void;
   onSave: () => Promise<void>;
   onDelete: () => Promise<void>;
 }) {
   const config = getProviderConfig(provider);
-  const { data: models, isLoading: loadingModels } = useProviderModels(provider);
+  const { data: models, isLoading: loadingModels } =
+    useProviderModels(provider);
 
   useEffect(() => {
     if (models && models.length > 0 && !formValue.model) {
@@ -137,7 +166,9 @@ function ProviderCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {config.name}
-          {!config.requiresApiKey && <span className="text-xs text-muted-foreground">Local</span>}
+          {!config.requiresApiKey && (
+            <span className="text-muted-foreground text-xs">Local</span>
+          )}
         </CardTitle>
         <CardDescription>{config.description}</CardDescription>
       </CardHeader>
@@ -146,18 +177,18 @@ function ProviderCard({
           <div className="space-y-2">
             <Label htmlFor={`${provider}-key`}>API key</Label>
             <Input
+              disabled={isLoading}
               id={`${provider}-key`}
+              onChange={(e) => onChange(provider, "key", e.target.value)}
               placeholder={config.keyPlaceholder}
               value={formValue.key}
-              onChange={(e) => onChange(provider, "key", e.target.value)}
-              disabled={isLoading}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {hasKey ? "Key saved" : "No key saved"}
             </p>
           </div>
         ) : (
-          <div className="flex items-center gap-2 rounded-md border bg-muted/50 p-3 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 rounded-md border bg-muted/50 p-3 text-muted-foreground text-sm">
             <ShieldQuestion className="h-4 w-4" />
             No API key needed. Ensure Ollama is running locally.
           </div>
@@ -166,11 +197,15 @@ function ProviderCard({
         <div className="space-y-2">
           <Label htmlFor={`${provider}-model`}>Default model</Label>
           <Select
-            value={formValue.model}
             onValueChange={(value) => onChange(provider, "model", value)}
+            value={formValue.model}
           >
             <SelectTrigger id={`${provider}-model`}>
-              <SelectValue placeholder={loadingModels ? "Loading models..." : "Select a model"} />
+              <SelectValue
+                placeholder={
+                  loadingModels ? "Loading models..." : "Select a model"
+                }
+              />
             </SelectTrigger>
             <SelectContent>
               {(models || []).map((model) => (
@@ -184,10 +219,10 @@ function ProviderCard({
 
         <div className="flex items-center gap-2">
           <Button
-            onClick={() => {
-              void onSave().catch(() => undefined);
-            }}
             disabled={saveDisabled(config, formValue) || saving}
+            onClick={() => {
+              onSave().catch(() => undefined);
+            }}
           >
             {isLoading || loadingModels || saving ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -196,12 +231,12 @@ function ProviderCard({
           </Button>
           {hasKey && (
             <Button
-              variant="ghost"
-              onClick={() => {
-                void onDelete().catch(() => undefined);
-              }}
-              disabled={deleting}
               className="text-destructive"
+              disabled={deleting}
+              onClick={() => {
+                onDelete().catch(() => undefined);
+              }}
+              variant="ghost"
             >
               {deleting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -217,9 +252,16 @@ function ProviderCard({
   );
 }
 
-function saveDisabled(config: ReturnType<typeof getProviderConfig>, formValue: { key: string; model: string }) {
-  if (!formValue.model) return true;
-  if (!config.requiresApiKey) return false;
+function saveDisabled(
+  config: ReturnType<typeof getProviderConfig>,
+  formValue: { key: string; model: string }
+) {
+  if (!formValue.model) {
+    return true;
+  }
+  if (!config.requiresApiKey) {
+    return false;
+  }
   return !validateProviderKey(config.id as AIProvider, formValue.key);
 }
 
@@ -233,7 +275,7 @@ function ModelsPanel() {
       gemini: "Gemini 2.5 family",
       ollama: "Local models via Ollama",
     }),
-    [],
+    []
   );
 
   return (
@@ -244,7 +286,7 @@ function ModelsPanel() {
             <CardTitle>{getProviderConfig(provider).name}</CardTitle>
             <CardDescription>{descriptions[provider]}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <CardContent className="space-y-3 text-muted-foreground text-sm">
             <ModelList provider={provider} />
           </CardContent>
         </Card>
@@ -267,9 +309,9 @@ function ModelList({ provider }: { provider: AIProvider }) {
   return (
     <div className="space-y-2">
       {models.map((model) => (
-        <div key={model.id} className="flex flex-col rounded-md border p-3">
+        <div className="flex flex-col rounded-md border p-3" key={model.id}>
           <span className="font-medium">{model.name}</span>
-          <span className="text-xs text-muted-foreground">{model.id}</span>
+          <span className="text-muted-foreground text-xs">{model.id}</span>
         </div>
       ))}
     </div>
@@ -290,8 +332,10 @@ function AutofillPanel() {
       await ipc.client.settings.writeAISettings({ settings: next });
       return next;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ai-settings"] }),
-    onError: (error: Error) => toast.error(error.message || "Failed to save settings"),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["ai-settings"] }),
+    onError: (error: Error) =>
+      toast.error(error.message || "Failed to save settings"),
   });
 
   if (isLoading || !settings) {
@@ -307,28 +351,38 @@ function AutofillPanel() {
       <Card>
         <CardHeader>
           <CardTitle>Autofill</CardTitle>
-          <CardDescription>Control how Superfill injects memories into forms.</CardDescription>
+          <CardDescription>
+            Control how Superfill injects memories into forms.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Enable autofill</p>
-              <p className="text-sm text-muted-foreground">Allow memories to populate form fields automatically.</p>
+              <p className="text-muted-foreground text-sm">
+                Allow memories to populate form fields automatically.
+              </p>
             </div>
             <Switch
               checked={settings.autoFillEnabled}
-              onCheckedChange={(checked) => updateSettings.mutate({ autoFillEnabled: checked })}
+              onCheckedChange={(checked) =>
+                updateSettings.mutate({ autoFillEnabled: checked })
+              }
             />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Autopilot mode</p>
-              <p className="text-sm text-muted-foreground">Fill confidently on trusted sites without prompts.</p>
+              <p className="text-muted-foreground text-sm">
+                Fill confidently on trusted sites without prompts.
+              </p>
             </div>
             <Switch
               checked={settings.autopilotMode}
-              onCheckedChange={(checked) => updateSettings.mutate({ autopilotMode: checked })}
+              onCheckedChange={(checked) =>
+                updateSettings.mutate({ autopilotMode: checked })
+              }
             />
           </div>
           <Separator />
@@ -336,27 +390,37 @@ function AutofillPanel() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium">Confidence threshold</p>
-                <p className="text-sm text-muted-foreground">Minimum match score before autofill occurs.</p>
+                <p className="text-muted-foreground text-sm">
+                  Minimum match score before autofill occurs.
+                </p>
               </div>
-              <span className="text-sm font-semibold">{Math.round(settings.confidenceThreshold * 100)}%</span>
+              <span className="font-semibold text-sm">
+                {Math.round(settings.confidenceThreshold * 100)}%
+              </span>
             </div>
             <Slider
-              value={[settings.confidenceThreshold]}
-              min={0}
               max={1}
+              min={0}
+              onValueChange={([value]) =>
+                updateSettings.mutate({ confidenceThreshold: value })
+              }
               step={0.05}
-              onValueChange={([value]) => updateSettings.mutate({ confidenceThreshold: value })}
+              value={[settings.confidenceThreshold]}
             />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Context menu</p>
-              <p className="text-sm text-muted-foreground">Show Superfill in right-click menus.</p>
+              <p className="text-muted-foreground text-sm">
+                Show Superfill in right-click menus.
+              </p>
             </div>
             <Switch
               checked={settings.contextMenuEnabled}
-              onCheckedChange={(checked) => updateSettings.mutate({ contextMenuEnabled: checked })}
+              onCheckedChange={(checked) =>
+                updateSettings.mutate({ contextMenuEnabled: checked })
+              }
             />
           </div>
         </CardContent>
@@ -365,16 +429,18 @@ function AutofillPanel() {
       <Card>
         <CardHeader>
           <CardTitle>Notes</CardTitle>
-          <CardDescription>Document site-specific rules or exceptions.</CardDescription>
+          <CardDescription>
+            Document site-specific rules or exceptions.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Textarea
-            placeholder="e.g. Disable autopilot on banking sites; prefer work email on corporate domains."
-            rows={10}
             className="resize-none"
             disabled
+            placeholder="e.g. Disable autopilot on banking sites; prefer work email on corporate domains."
+            rows={10}
           />
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-2 text-muted-foreground text-xs">
             Notes sync is coming soon.
           </p>
         </CardContent>
@@ -387,22 +453,22 @@ function SettingsPage() {
   return (
     <div className="flex h-full flex-col gap-6">
       <div>
-        <p className="text-sm text-muted-foreground">Configuration</p>
-        <h1 className="text-2xl font-semibold">Settings</h1>
+        <p className="text-muted-foreground text-sm">Configuration</p>
+        <h1 className="font-semibold text-2xl">Settings</h1>
       </div>
-      <Tabs defaultValue="providers" className="flex flex-1 flex-col">
+      <Tabs className="flex flex-1 flex-col" defaultValue="providers">
         <TabsList className="w-fit">
           <TabsTrigger value="providers">Providers</TabsTrigger>
           <TabsTrigger value="models">Models</TabsTrigger>
           <TabsTrigger value="autofill">Autofill</TabsTrigger>
         </TabsList>
-        <TabsContent value="providers" className="flex-1">
+        <TabsContent className="flex-1" value="providers">
           <ProvidersPanel />
         </TabsContent>
-        <TabsContent value="models" className="flex-1">
+        <TabsContent className="flex-1" value="models">
           <ModelsPanel />
         </TabsContent>
-        <TabsContent value="autofill" className="flex-1">
+        <TabsContent className="flex-1" value="autofill">
           <AutofillPanel />
         </TabsContent>
       </Tabs>

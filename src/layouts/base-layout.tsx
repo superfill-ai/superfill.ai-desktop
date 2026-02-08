@@ -1,8 +1,8 @@
+import { QueryClientProvider } from "@tanstack/react-query";
 import type React from "react";
-import { APP_NAME } from "@/constants";
 import DragWindowRegion from "@/components/drag-window-region";
 import NavigationMenu from "@/components/navigation-menu";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { APP_NAME } from "@/constants";
 import { queryClient } from "@/lib/query";
 
 export default function BaseLayout({

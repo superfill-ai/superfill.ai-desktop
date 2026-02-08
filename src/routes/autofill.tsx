@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Bot,
@@ -9,6 +8,7 @@ import {
   Play,
   Square,
 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,7 +66,7 @@ function AutofillPage() {
       if (res.success) {
         const count = res.filledFields.length;
         setStatusMessage(
-          `Completed — filled ${count} of ${res.totalFieldsFound} fields in ${((res.processingTime ?? 0) / 1000).toFixed(1)}s`,
+          `Completed — filled ${count} of ${res.totalFieldsFound} fields in ${((res.processingTime ?? 0) / 1000).toFixed(1)}s`
         );
         setRunState("done");
         toast.success(`Autofill complete — ${count} fields filled`);
@@ -76,8 +76,7 @@ function AutofillPage() {
         toast.error(res.error ?? "Autofill failed");
       }
     } catch (error) {
-      const msg =
-        error instanceof Error ? error.message : "Unknown error";
+      const msg = error instanceof Error ? error.message : "Unknown error";
       setStatusMessage(msg);
       setRunState("error");
       toast.error(msg);
@@ -99,8 +98,8 @@ function AutofillPage() {
     <div className="flex h-full flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">Stagehand</p>
-          <h1 className="text-2xl font-semibold">Autofill</h1>
+          <p className="text-muted-foreground text-sm">Stagehand</p>
+          <h1 className="font-semibold text-2xl">Autofill</h1>
         </div>
       </div>
 
@@ -108,25 +107,27 @@ function AutofillPage() {
         <CardContent className="pt-6">
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Globe className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="pl-9"
+                disabled={isRunning}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !isRunning) {
+                    handleStart();
+                  }
+                }}
                 placeholder="https://example.com/apply"
                 value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                disabled={isRunning}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !isRunning) handleStart();
-                }}
               />
             </div>
             {isRunning ? (
-              <Button variant="destructive" onClick={handleStop}>
+              <Button onClick={handleStop} variant="destructive">
                 <Square className="mr-2 h-4 w-4" />
                 Stop
               </Button>
             ) : (
-              <Button onClick={handleStart} disabled={!url.trim()}>
+              <Button disabled={!url.trim()} onClick={handleStart}>
                 <Play className="mr-2 h-4 w-4" />
                 Start
               </Button>
@@ -152,10 +153,8 @@ function AutofillPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">{statusMessage}</p>
-            {isRunning && (
-              <Progress className="mt-3" value={undefined} />
-            )}
+            <p className="text-muted-foreground text-sm">{statusMessage}</p>
+            {isRunning && <Progress className="mt-3" value={undefined} />}
           </CardContent>
         </Card>
       )}
@@ -181,10 +180,7 @@ function AutofillPage() {
                 </TableHeader>
                 <TableBody>
                   {result.filledFields.map((field, idx) => (
-                    <FieldRow
-                      key={`${field.label}-${idx}`}
-                      field={field}
-                    />
+                    <FieldRow field={field} key={`${field.label}-${idx}`} />
                   ))}
                 </TableBody>
               </Table>
@@ -202,8 +198,8 @@ function AutofillPage() {
               Superfill.ai.
             </p>
             <p className="mt-1 text-xs">
-              A Chromium window will open and the form will be filled
-              automatically using your memories.
+              Your browser will open with a persistent profile so logins and
+              cookies carry over between sessions.
             </p>
           </div>
         </div>
@@ -215,7 +211,7 @@ function AutofillPage() {
 function FieldRow({ field }: { field: FilledField }) {
   return (
     <TableRow>
-      <TableCell className="text-sm font-medium">{field.label}</TableCell>
+      <TableCell className="font-medium text-sm">{field.label}</TableCell>
       <TableCell className="max-w-[250px] truncate text-sm">
         {field.value}
       </TableCell>

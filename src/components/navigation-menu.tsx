@@ -14,7 +14,7 @@ export default function NavigationMenu() {
 
   return (
     <nav className="flex h-full flex-col gap-4 p-4 text-sm">
-      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <div className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
         Superfill.ai
       </div>
       <div className="space-y-1">
@@ -22,14 +22,14 @@ export default function NavigationMenu() {
           const isActive = Boolean(matchRoute({ to, fuzzy: to !== "/" }));
           return (
             <Link
-              key={to}
-              to={to}
               className={cn(
                 "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-accent hover:text-accent-foreground",
-                isActive && "bg-accent text-accent-foreground",
+                isActive && "bg-accent text-accent-foreground"
               )}
+              key={to}
+              to={to}
             >
-              <Icon className="h-4 w-4" aria-hidden />
+              <Icon aria-hidden className="h-4 w-4" />
               <span>{label}</span>
             </Link>
           );

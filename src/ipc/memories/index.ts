@@ -1,19 +1,19 @@
 import {
-    bulkCreateMemories,
-    createMemory,
-    editMemory,
-    exportMemories,
-    importMemories,
-    listMemories,
-    removeMemory,
+  bulkCreateMemories,
+  createMemory,
+  editMemory,
+  exportMemories,
+  importMemories,
+  listMemories,
+  removeMemory,
 } from "./handlers";
 
 export const memories = {
-    listMemories,
-    createMemory,
-    bulkCreateMemories,
-    editMemory,
-    removeMemory,
-    exportMemories,
-    importMemories,
+  listMemories,
+  createMemory,
+  bulkCreateMemories,
+  editMemory,
+  removeMemory,
+  exportMemories,
+  importMemories,
 };

@@ -1,13 +1,13 @@
 import {
-    checkProviderKey,
-    readProviderKey,
-    removeProviderKey,
-    saveProviderKey,
+  checkProviderKey,
+  readProviderKey,
+  removeProviderKey,
+  saveProviderKey,
 } from "./handlers";
 
 export const security = {
-    saveProviderKey,
-    readProviderKey,
-    removeProviderKey,
-    checkProviderKey,
+  saveProviderKey,
+  readProviderKey,
+  removeProviderKey,
+  checkProviderKey,
 };

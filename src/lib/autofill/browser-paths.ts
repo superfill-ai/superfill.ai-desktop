@@ -1,6 +1,6 @@
-import { app } from "electron";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { app } from "electron";
 import { createLogger } from "@/lib/logger";
 
 const logger = createLogger("browser-paths");
@@ -16,9 +16,7 @@ const BROWSER_PATHS: Record<BrowserType, BrowserPathEntry> = {
   chrome: {
     label: "Google Chrome",
     paths: {
-      darwin: [
-        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-      ],
+      darwin: ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"],
       win32: [
         "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
         "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
@@ -43,35 +41,25 @@ const BROWSER_PATHS: Record<BrowserType, BrowserPathEntry> = {
         "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
         `${process.env.LOCALAPPDATA ?? ""}\\Microsoft\\Edge\\Application\\msedge.exe`,
       ],
-      linux: [
-        "/usr/bin/microsoft-edge",
-        "/usr/bin/microsoft-edge-stable",
-      ],
+      linux: ["/usr/bin/microsoft-edge", "/usr/bin/microsoft-edge-stable"],
     },
   },
   brave: {
     label: "Brave",
     paths: {
-      darwin: [
-        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
-      ],
+      darwin: ["/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"],
       win32: [
         `${process.env.LOCALAPPDATA ?? ""}\\BraveSoftware\\Brave-Browser\\Application\\brave.exe`,
         "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
         "C:\\Program Files (x86)\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
       ],
-      linux: [
-        "/usr/bin/brave-browser",
-        "/usr/bin/brave-browser-stable",
-      ],
+      linux: ["/usr/bin/brave-browser", "/usr/bin/brave-browser-stable"],
     },
   },
   chromium: {
     label: "Chromium",
     paths: {
-      darwin: [
-        "/Applications/Chromium.app/Contents/MacOS/Chromium",
-      ],
+      darwin: ["/Applications/Chromium.app/Contents/MacOS/Chromium"],
       win32: [
         `${process.env.LOCALAPPDATA ?? ""}\\Chromium\\Application\\chrome.exe`,
       ],
@@ -85,7 +73,7 @@ const BROWSER_PATHS: Record<BrowserType, BrowserPathEntry> = {
 };
 
 export function findBrowserExecutable(
-  browser: BrowserType,
+  browser: BrowserType
 ): string | undefined {
   const entry = BROWSER_PATHS[browser];
   const candidates = entry.paths[process.platform] ?? [];
@@ -106,12 +94,20 @@ export function detectInstalledBrowsers(): {
   label: string;
   executablePath: string;
 }[] {
-  const results: { type: BrowserType; label: string; executablePath: string }[] = [];
+  const results: {
+    type: BrowserType;
+    label: string;
+    executablePath: string;
+  }[] = [];
 
   for (const [type, entry] of Object.entries(BROWSER_PATHS)) {
     const exe = findBrowserExecutable(type as BrowserType);
     if (exe) {
-      results.push({ type: type as BrowserType, label: entry.label, executablePath: exe });
+      results.push({
+        type: type as BrowserType,
+        label: entry.label,
+        executablePath: exe,
+      });
     }
   }
 

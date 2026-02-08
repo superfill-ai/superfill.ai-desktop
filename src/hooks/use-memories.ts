@@ -1,8 +1,8 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { ipc } from "@/ipc/manager";
-import type { MemoryEntry } from "@/types/memory";
 import { queryClient } from "@/lib/query";
+import type { MemoryEntry } from "@/types/memory";
 
 type CreateMemoryEntry = Omit<MemoryEntry, "id" | "metadata">;
 type UpdateMemoryEntry = Partial<Omit<MemoryEntry, "id" | "metadata">>;
@@ -12,7 +12,7 @@ const MEMORIES_QUERY_KEY = ["memories"];
 export const useMemories = () => {
   const query = useQuery({
     queryKey: MEMORIES_QUERY_KEY,
-    queryFn: async () => {
+    queryFn: () => {
       return ipc.client.memories.listMemories();
     },
     staleTime: 5 * 60 * 1000,
@@ -28,7 +28,7 @@ export const useMemories = () => {
 
 export const useMemoryMutations = () => {
   const addEntry = useMutation({
-    mutationFn: async (entry: CreateMemoryEntry) => {
+    mutationFn: (entry: CreateMemoryEntry) => {
       return ipc.client.memories.createMemory(entry);
     },
     onSuccess: () => {
@@ -37,7 +37,7 @@ export const useMemoryMutations = () => {
   });
 
   const addEntries = useMutation({
-    mutationFn: async (entries: CreateMemoryEntry[]) => {
+    mutationFn: (entries: CreateMemoryEntry[]) => {
       return ipc.client.memories.bulkCreateMemories(entries);
     },
     onSuccess: () => {
@@ -46,7 +46,7 @@ export const useMemoryMutations = () => {
   });
 
   const updateEntry = useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       id,
       updates,
     }: {
@@ -61,7 +61,7 @@ export const useMemoryMutations = () => {
   });
 
   const deleteEntry = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: (id: string) => {
       return ipc.client.memories.removeMemory({ id });
     },
     onSuccess: () => {
@@ -70,7 +70,7 @@ export const useMemoryMutations = () => {
   });
 
   const importFromCSV = useMutation({
-    mutationFn: async (csvContent: string) => {
+    mutationFn: (csvContent: string) => {
       return ipc.client.memories.importMemories({ csv: csvContent });
     },
     onSuccess: () => {
@@ -100,7 +100,9 @@ export const useSearchMemories = (query: string) => {
 
   return useMemo(() => {
     const normalizedQuery = query.toLowerCase().trim();
-    if (!normalizedQuery) return entries;
+    if (!normalizedQuery) {
+      return entries;
+    }
 
     return entries.filter((entry) => {
       return (
@@ -123,18 +125,18 @@ export const useMemoryStats = () => {
 };
 
 export const useTopUsedTags = (
-  topN: number,
+  topN: number
 ): Array<{ tag: string; count: number }> => {
   const { entries } = useMemories();
 
   return useMemo(() => {
     const tagCountMap: Record<string, number> = {};
 
-    entries.forEach((entry) => {
-      entry.tags.forEach((tag) => {
+    for (const entry of entries) {
+      for (const tag of entry.tags) {
         tagCountMap[tag] = (tagCountMap[tag] || 0) + 1;
-      });
-    });
+      }
+    }
 
     const sortedTags = Object.entries(tagCountMap)
       .sort((a, b) => b[1] - a[1])
@@ -158,7 +160,7 @@ export const useMemoriesByTags = (tags: string[]) => {
 
   return useMemo(() => {
     return entries.filter((entry) =>
-      tags.some((tag) => entry.tags.includes(tag)),
+      tags.some((tag) => entry.tags.includes(tag))
     );
   }, [entries, tags]);
 };
@@ -175,7 +177,7 @@ export const csvUtils = {
       "createdAt",
       "updatedAt",
     ];
-    const csv = headers.join(",") + "\n";
+    const csv = `${headers.join(",")}\n`;
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");

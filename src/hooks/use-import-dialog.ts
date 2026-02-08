@@ -40,7 +40,7 @@ export function useImportDialog<
   TStatus extends string,
 >(
   options: UseImportDialogOptions<TItem>,
-  initialStatus: TStatus,
+  initialStatus: TStatus
 ): UseImportDialogReturn<TItem, TStatus> {
   const {
     importTag,
@@ -63,8 +63,8 @@ export function useImportDialog<
   const handleToggleItem = useCallback((itemId: string) => {
     setImportItems((prev) =>
       prev.map((item) =>
-        item.id === itemId ? { ...item, selected: !item.selected } : item,
-      ),
+        item.id === itemId ? { ...item, selected: !item.selected } : item
+      )
     );
   }, []);
 
@@ -99,7 +99,7 @@ export function useImportDialog<
           category: item.category,
           tags: [...item.tags, importTag],
           confidence: 1.0,
-        }),
+        })
       );
 
       await addEntries.mutateAsync(entries);
@@ -116,7 +116,7 @@ export function useImportDialog<
     } catch (err) {
       logger.error("Failed to save memories:", err);
       toast.error(
-        err instanceof Error ? err.message : "Failed to save memories",
+        err instanceof Error ? err.message : "Failed to save memories"
       );
     } finally {
       setIsSaving(false);
@@ -135,14 +135,16 @@ export function useImportDialog<
   const handleClose = useCallback(
     (open: boolean) => {
       if (!open) {
-        if (isSaving) return;
+        if (isSaving) {
+          return;
+        }
 
         requestIdRef.current++;
         resetState();
         onOpenChange(false);
       }
     },
-    [isSaving, resetState, onOpenChange],
+    [isSaving, resetState, onOpenChange]
   );
 
   return {

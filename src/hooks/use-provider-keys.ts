@@ -7,8 +7,8 @@ import {
   getProviderConfig,
   validateProviderKey,
 } from "@/lib/providers/registry";
-import type { AISettings } from "@/types/settings";
 import { queryClient } from "@/lib/query";
+import type { AISettings } from "@/types/settings";
 
 export const PROVIDER_KEYS_QUERY_KEY = ["provider-keys"] as const;
 
@@ -19,9 +19,11 @@ export function useProviderKeyStatuses() {
       const statuses: Record<string, boolean> = {};
       await Promise.all(
         AI_PROVIDERS.map(async (provider) => {
-          const hasKey = await ipc.client.security.checkProviderKey({ provider });
+          const hasKey = await ipc.client.security.checkProviderKey({
+            provider,
+          });
           statuses[provider] = Boolean(hasKey);
-        }),
+        })
       );
 
       return statuses;
