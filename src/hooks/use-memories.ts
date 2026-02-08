@@ -1,15 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { storage } from "@/lib/storage";
-import {
-  addEntries as addEntriesHelper,
-  addEntry as addEntryHelper,
-  deleteEntry as deleteEntryHelper,
-  downloadCSVTemplate as downloadCSVTemplateHelper,
-  exportToCSV as exportToCSVHelper,
-  importFromCSV as importFromCSVHelper,
-  updateEntry as updateEntryHelper,
-} from "@/lib/storage/memories";
+import { ipc } from "@/ipc/manager";
 import type { MemoryEntry } from "@/types/memory";
 
 type CreateMemoryEntry = Omit<MemoryEntry, "id" | "metadata">;
@@ -23,20 +14,10 @@ export const useMemories = () => {
   const query = useQuery({
     queryKey: MEMORIES_QUERY_KEY,
     queryFn: async () => {
-      return await storage.memories.getValue();
+      return ipc.client.memories.listMemories();
     },
-    staleTime: Number.POSITIVE_INFINITY,
+    staleTime: 5 * 60 * 1000,
   });
-
-  useMemo(() => {
-    const unwatch = storage.memories.watch((newMemories) => {
-      if (newMemories !== null) {
-        queryClient.setQueryData(MEMORIES_QUERY_KEY, newMemories);
-      }
-    });
-
-    return () => unwatch();
-  }, [queryClient]);
 
   return {
     entries: query.data ?? [],
@@ -51,7 +32,7 @@ export const useMemoryMutations = () => {
 
   const addEntry = useMutation({
     mutationFn: async (entry: CreateMemoryEntry) => {
-      return await addEntryHelper(entry);
+      return ipc.client.memories.createMemory(entry);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MEMORIES_QUERY_KEY });
@@ -60,7 +41,7 @@ export const useMemoryMutations = () => {
 
   const addEntries = useMutation({
     mutationFn: async (entries: CreateMemoryEntry[]) => {
-      return await addEntriesHelper(entries);
+      return ipc.client.memories.bulkCreateMemories(entries);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MEMORIES_QUERY_KEY });
@@ -75,7 +56,7 @@ export const useMemoryMutations = () => {
       id: string;
       updates: UpdateMemoryEntry;
     }) => {
-      return await updateEntryHelper(id, updates);
+      return ipc.client.memories.editMemory({ id, updates });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MEMORIES_QUERY_KEY });
@@ -84,7 +65,7 @@ export const useMemoryMutations = () => {
 
   const deleteEntry = useMutation({
     mutationFn: async (id: string) => {
-      return await deleteEntryHelper(id);
+      return ipc.client.memories.removeMemory({ id });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MEMORIES_QUERY_KEY });
@@ -93,7 +74,7 @@ export const useMemoryMutations = () => {
 
   const importFromCSV = useMutation({
     mutationFn: async (csvContent: string) => {
-      return await importFromCSVHelper(csvContent);
+      return ipc.client.memories.importMemories({ csv: csvContent });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MEMORIES_QUERY_KEY });
@@ -186,6 +167,24 @@ export const useMemoriesByTags = (tags: string[]) => {
 };
 
 export const csvUtils = {
-  exportToCSV: exportToCSVHelper,
-  downloadCSVTemplate: downloadCSVTemplateHelper,
+  exportToCSV: async () => ipc.client.memories.exportMemories(),
+  downloadCSVTemplate: () => {
+    const headers = [
+      "question",
+      "answer",
+      "category",
+      "tags",
+      "confidence",
+      "createdAt",
+      "updatedAt",
+    ];
+    const csv = headers.join(",") + "\n";
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "superfill-template.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  },
 };

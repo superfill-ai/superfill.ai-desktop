@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { ipc } from "@/ipc/manager";
 import type { AIProvider } from "@/lib/providers/registry";
 import {
   AI_PROVIDERS,
   getProviderConfig,
   validateProviderKey,
 } from "@/lib/providers/registry";
-import { getKeyVaultService } from "@/lib/security/key-vault-service";
-import { storage } from "@/lib/storage";
 import type { AISettings } from "@/types/settings";
 
 export const PROVIDER_KEYS_QUERY_KEY = ["provider-keys"] as const;
@@ -17,12 +16,10 @@ export function useProviderKeyStatuses() {
     queryKey: PROVIDER_KEYS_QUERY_KEY,
     queryFn: async () => {
       const statuses: Record<string, boolean> = {};
-      const keyVaultService = getKeyVaultService();
-
       await Promise.all(
         AI_PROVIDERS.map(async (provider) => {
-          const hasKey = await keyVaultService.hasKey(provider);
-          statuses[provider] = hasKey;
+          const hasKey = await ipc.client.security.checkProviderKey({ provider });
+          statuses[provider] = Boolean(hasKey);
         }),
       );
 
@@ -51,26 +48,20 @@ export function useSaveApiKeyWithModel() {
         throw new Error(`Invalid ${config.name} API key format`);
       }
 
-      const keyVaultService = getKeyVaultService();
+      await ipc.client.security.saveProviderKey({ provider, apiKey: key });
 
-      if (await keyVaultService.validateKey(provider, key)) {
-        await keyVaultService.storeKey(provider, key);
+      const currentSettings = await ipc.client.settings.readAISettings();
+      const updatedModels = {
+        ...currentSettings.selectedModels,
+        [provider]: defaultModel,
+      };
+      const updatedSettings: AISettings = {
+        ...currentSettings,
+        selectedProvider: provider,
+        selectedModels: updatedModels,
+      };
 
-        const currentSettings = await storage.aiSettings.getValue();
-        const updatedModels = {
-          ...currentSettings.selectedModels,
-          [provider]: defaultModel,
-        };
-        const updatedSettings: AISettings = {
-          ...currentSettings,
-          selectedProvider: provider,
-          selectedModels: updatedModels,
-        };
-
-        await storage.aiSettings.setValue(updatedSettings);
-      } else {
-        throw new Error("Invalid API key");
-      }
+      await ipc.client.settings.writeAISettings({ settings: updatedSettings });
 
       return { provider, key, defaultModel };
     },
@@ -96,8 +87,22 @@ export function useDeleteApiKey() {
 
   return useMutation({
     mutationFn: async (provider: AIProvider) => {
-      const keyVaultService = getKeyVaultService();
-      await keyVaultService.deleteKey(provider);
+      await ipc.client.security.removeProviderKey({ provider });
+
+      const settings = await ipc.client.settings.readAISettings();
+      const updatedModels = { ...(settings.selectedModels || {}) };
+      delete updatedModels[provider];
+
+      const updatedSettings: AISettings = {
+        ...settings,
+        selectedModels: updatedModels,
+        selectedProvider:
+          settings.selectedProvider === provider
+            ? undefined
+            : settings.selectedProvider,
+      };
+
+      await ipc.client.settings.writeAISettings({ settings: updatedSettings });
       return provider;
     },
     onSuccess: async (provider) => {

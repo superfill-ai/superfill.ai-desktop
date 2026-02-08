@@ -1,15 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
+import { ipc } from "@/ipc/manager";
 import { getModelService, type ModelInfo } from "@/lib/providers/model-service";
 import type { AIProvider } from "@/lib/providers/registry";
-import { getKeyVaultService } from "@/lib/security/key-vault-service";
 
 export const useProviderModels = (provider: AIProvider) => {
   return useQuery({
     queryKey: ["models", provider],
     queryFn: async (): Promise<ModelInfo[]> => {
       const modelService = getModelService();
-      const keyVaultService = getKeyVaultService();
-      const apiKey = await keyVaultService.getKey(provider);
+      const apiKey = await ipc.client.security.readProviderKey({ provider });
 
       return modelService.getModels(provider, apiKey || undefined);
     },
