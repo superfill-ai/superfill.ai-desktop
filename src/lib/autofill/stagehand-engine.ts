@@ -32,7 +32,7 @@ const DEFAULT_MODELS: Record<AIProvider, string> = {
 
 function resolveStagehandModel(
   provider: AIProvider,
-  modelName?: string
+  modelName?: string,
 ): string {
   if (modelName) {
     const prefix = STAGEHAND_PROVIDER_PREFIX[provider];
@@ -124,7 +124,7 @@ const FilledFieldsSchema = z.object({
         .string()
         .optional()
         .describe("The type of field (text, email, select, etc.)"),
-    })
+    }),
   ),
 });
 
@@ -151,7 +151,7 @@ export class StagehandEngine {
     provider: AIProvider,
     apiKey: string,
     modelName?: string,
-    browserOptions?: BrowserLaunchOptions
+    browserOptions?: BrowserLaunchOptions,
   ): Promise<void> {
     logger.info("Launching Stagehand (LOCAL headed browser)");
     this.emitProgress("launching", "Launching browser…");
@@ -211,7 +211,7 @@ export class StagehandEngine {
 
   async runAutofill(
     url: string,
-    memories: MemoryEntry[]
+    memories: MemoryEntry[],
   ): Promise<AutofillResult> {
     const startTime = performance.now();
 
@@ -231,7 +231,7 @@ export class StagehandEngine {
 
       this.emitProgress("observing", "Discovering form fields…");
       const observedFields = await sh.observe(
-        "Find all visible, interactive form fields on this page including text inputs, email inputs, phone inputs, textareas, dropdowns/selects, checkboxes, date pickers, and radio buttons. Exclude hidden fields and submit/cancel buttons."
+        "Find all visible, interactive form fields on this page including text inputs, email inputs, phone inputs, textareas, dropdowns/selects, checkboxes, date pickers, and radio buttons. Exclude hidden fields and submit/cancel buttons.",
       );
       const totalFields = observedFields.length;
       logger.info(`Observed ${totalFields} form fields`);
@@ -252,7 +252,7 @@ export class StagehandEngine {
 
       this.emitProgress(
         "filling",
-        `Filling ${totalFields} form fields with your data…`
+        `Filling ${totalFields} form fields with your data…`,
       );
       const memoryContext = formatMemoriesForPrompt(memories);
 
@@ -262,7 +262,7 @@ export class StagehandEngine {
       } catch (agentErr) {
         logger.warn(
           "Agent strategy failed, trying observe+act fallback:",
-          agentErr
+          agentErr,
         );
         filledFields = await this.fillWithObserveAct(memories);
       }
@@ -278,7 +278,7 @@ export class StagehandEngine {
       const elapsed = performance.now() - startTime;
       this.emitProgress(
         "completed",
-        `Done — filled ${filledFields.length} of ${totalFields} fields in ${(elapsed / 1000).toFixed(1)}s`
+        `Done — filled ${filledFields.length} of ${totalFields} fields in ${(elapsed / 1000).toFixed(1)}s`,
       );
 
       return {
@@ -324,7 +324,7 @@ Rules:
     });
 
     const result = await agent.execute(
-      "Fill out all the form fields on this page using the personal data provided. Fill every field where you have matching data. Do not submit the form."
+      "Fill out all the form fields on this page using the personal data provided. Fill every field where you have matching data. Do not submit the form.",
     );
 
     logger.info("Agent completed:", JSON.stringify(result));
@@ -333,7 +333,7 @@ Rules:
   }
 
   private async fillWithObserveAct(
-    memories: MemoryEntry[]
+    memories: MemoryEntry[],
   ): Promise<FilledField[]> {
     const sh = this.requireStagehand();
     const filled: FilledField[] = [];
@@ -348,7 +348,7 @@ Rules:
       try {
         const result = await sh.act(
           `Find a form field that asks for "${label}" and type %value% into it. If no matching field exists, do nothing.`,
-          { variables: { value: memory.answer } }
+          { variables: { value: memory.answer } },
         );
 
         if (result.success) {
@@ -367,7 +367,7 @@ Rules:
     try {
       const result = await sh.extract(
         "Extract all form fields that currently have a non-empty value. For each, give the visible label and the current value.",
-        FilledFieldsSchema
+        FilledFieldsSchema,
       );
       return result.fields;
     } catch (err) {

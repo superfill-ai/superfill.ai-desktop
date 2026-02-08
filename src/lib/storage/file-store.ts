@@ -22,7 +22,7 @@ async function writeFile<T>(filePath: string, data: T): Promise<void> {
 
 export async function readFromStore<T>(
   filename: string,
-  fallback: T
+  fallback: T,
 ): Promise<T> {
   const dir = getStoreDir();
   await ensureDir(dir);
@@ -46,7 +46,7 @@ export async function readFromStore<T>(
 
 export async function writeToStore<T>(
   filename: string,
-  data: T
+  data: T,
 ): Promise<void> {
   const dir = getStoreDir();
   await ensureDir(dir);
@@ -57,7 +57,7 @@ export async function writeToStore<T>(
 export async function updateStore<T>(
   filename: string,
   updater: (current: T) => T,
-  fallback: T
+  fallback: T,
 ): Promise<T> {
   const current = await readFromStore<T>(filename, fallback);
   const updated = updater(current);

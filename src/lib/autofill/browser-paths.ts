@@ -73,7 +73,7 @@ const BROWSER_PATHS: Record<BrowserType, BrowserPathEntry> = {
 };
 
 export function findBrowserExecutable(
-  browser: BrowserType
+  browser: BrowserType,
 ): string | undefined {
   const entry = BROWSER_PATHS[browser];
   const candidates = entry.paths[process.platform] ?? [];

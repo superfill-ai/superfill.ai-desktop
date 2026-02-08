@@ -10,7 +10,7 @@ export interface ThemePreferences {
 export async function getCurrentTheme(): Promise<ThemePreferences> {
   const currentTheme = await ipc.client.theme.getCurrentThemeMode();
   const localTheme = localStorage.getItem(
-    LOCAL_STORAGE_KEYS.THEME
+    LOCAL_STORAGE_KEYS.THEME,
   ) as ThemeMode | null;
 
   return {

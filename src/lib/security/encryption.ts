@@ -11,7 +11,7 @@ export class EncryptionError extends Error {
 
 export async function deriveKey(
   password: string,
-  salt: string
+  salt: string,
 ): Promise<CryptoKey> {
   try {
     const encoder = new TextEncoder();
@@ -20,7 +20,7 @@ export async function deriveKey(
       encoder.encode(password),
       "PBKDF2",
       false,
-      ["deriveKey"]
+      ["deriveKey"],
     );
 
     return crypto.subtle.deriveKey(
@@ -33,7 +33,7 @@ export async function deriveKey(
       keyMaterial,
       { name: "AES-GCM", length: 256 },
       false,
-      ["encrypt", "decrypt"]
+      ["encrypt", "decrypt"],
     );
   } catch (error) {
     logger.error("Key derivation failed:", error);
@@ -51,7 +51,7 @@ export function generateSalt(): string {
 export async function encrypt(
   data: string,
   key: string,
-  salt: string
+  salt: string,
 ): Promise<string> {
   try {
     const iv = crypto.getRandomValues(new Uint8Array(16));
@@ -60,7 +60,7 @@ export async function encrypt(
     const encrypted = await crypto.subtle.encrypt(
       { name: "AES-GCM", iv },
       derivedKey,
-      encoder.encode(data)
+      encoder.encode(data),
     );
 
     return JSON.stringify({
@@ -78,7 +78,7 @@ export async function encrypt(
 export async function decrypt(
   encryptedData: string,
   key: string,
-  salt: string
+  salt: string,
 ): Promise<string> {
   try {
     const parsed = JSON.parse(encryptedData);
@@ -92,7 +92,7 @@ export async function decrypt(
     const decrypted = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv: new Uint8Array(iv) },
       derivedKey,
-      new Uint8Array(encrypted)
+      new Uint8Array(encrypted),
     );
 
     return new TextDecoder().decode(decrypted);

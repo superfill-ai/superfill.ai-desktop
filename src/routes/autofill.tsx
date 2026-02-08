@@ -66,7 +66,7 @@ function AutofillPage() {
       if (res.success) {
         const count = res.filledFields.length;
         setStatusMessage(
-          `Completed — filled ${count} of ${res.totalFieldsFound} fields in ${((res.processingTime ?? 0) / 1000).toFixed(1)}s`
+          `Completed — filled ${count} of ${res.totalFieldsFound} fields in ${((res.processingTime ?? 0) / 1000).toFixed(1)}s`,
         );
         setRunState("done");
         toast.success(`Autofill complete — ${count} fields filled`);

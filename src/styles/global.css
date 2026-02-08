@@ -147,18 +147,30 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --linearPrimarySecondary: linear-gradient(oklch(77.20% 0.127 48.46),
-      oklch(80.09% 0.069 51.15));
-  --linearPrimaryAccent: linear-gradient(oklch(77.20% 0.127 48.46),
-      oklch(71.22% 0.113 48.82));
-  --linearSecondaryAccent: linear-gradient(oklch(80.09% 0.069 51.15),
-      oklch(71.22% 0.113 48.82));
-  --radialPrimarySecondary: radial-gradient(oklch(77.20% 0.127 48.46),
-      oklch(80.09% 0.069 51.15));
-  --radialPrimaryAccent: radial-gradient(oklch(77.20% 0.127 48.46),
-      oklch(71.22% 0.113 48.82));
-  --radialSecondaryAccent: radial-gradient(oklch(80.09% 0.069 51.15),
-      oklch(71.22% 0.113 48.82));
+  --linearPrimarySecondary: linear-gradient(
+    oklch(77.20% 0.127 48.46),
+    oklch(80.09% 0.069 51.15)
+  );
+  --linearPrimaryAccent: linear-gradient(
+    oklch(77.20% 0.127 48.46),
+    oklch(71.22% 0.113 48.82)
+  );
+  --linearSecondaryAccent: linear-gradient(
+    oklch(80.09% 0.069 51.15),
+    oklch(71.22% 0.113 48.82)
+  );
+  --radialPrimarySecondary: radial-gradient(
+    oklch(77.20% 0.127 48.46),
+    oklch(80.09% 0.069 51.15)
+  );
+  --radialPrimaryAccent: radial-gradient(
+    oklch(77.20% 0.127 48.46),
+    oklch(71.22% 0.113 48.82)
+  );
+  --radialSecondaryAccent: radial-gradient(
+    oklch(80.09% 0.069 51.15),
+    oklch(71.22% 0.113 48.82)
+  );
 
   --font-sans: Outfit, sans-serif;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;

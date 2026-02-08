@@ -26,7 +26,7 @@ export const TRACKABLE_FIELD_TYPES = [
 ] as const;
 
 export function isTrackableFieldType(
-  value: string
+  value: string,
 ): value is TrackableFieldType {
   return TRACKABLE_FIELD_TYPES.includes(value as TrackableFieldType);
 }
@@ -72,7 +72,7 @@ export function isMessagingSite(hostname: string, pathname: string): boolean {
 
   if (
     MESSAGING_SITE_BLOCKLIST_DOMAINS.some((domain) =>
-      lowerHostname.includes(domain)
+      lowerHostname.includes(domain),
     )
   ) {
     return true;
@@ -81,14 +81,14 @@ export function isMessagingSite(hostname: string, pathname: string): boolean {
   return MESSAGING_SITE_BLOCKLIST_PATHS.some(
     (entry) =>
       lowerHostname.includes(entry.domain) &&
-      lowerPathname.startsWith(entry.path)
+      lowerPathname.startsWith(entry.path),
   );
 }
 
 export function isElementPartOfForm(element: HTMLElement): boolean {
   const countInputs = (root: ParentNode): number => {
     const inputs = root.querySelectorAll(
-      'input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="file"]):not([type="image"]):not([type="checkbox"]):not([type="radio"]), textarea, select, [contenteditable]:not([contenteditable="false"])'
+      'input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="file"]):not([type="image"]):not([type="checkbox"]):not([type="radio"]), textarea, select, [contenteditable]:not([contenteditable="false"])',
     );
     return inputs.length;
   };
@@ -112,10 +112,10 @@ export function isElementPartOfForm(element: HTMLElement): boolean {
 
 export function isLoginOrSmallForm(element: HTMLElement): boolean {
   const formContainer = element.closest(
-    'form, [role="form"], [data-form], .form'
+    'form, [role="form"], [data-form], .form',
   ) as HTMLElement | null;
   const genericContainer = element.closest(
-    "div, section, main, aside"
+    "div, section, main, aside",
   ) as HTMLElement | null;
   const container = (formContainer ?? genericContainer) as ParentNode | null;
 
@@ -124,7 +124,7 @@ export function isLoginOrSmallForm(element: HTMLElement): boolean {
   }
 
   const inputs = container.querySelectorAll(
-    'input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="file"]):not([type="image"]):not([type="checkbox"]):not([type="radio"]), textarea, select, [contenteditable]:not([contenteditable="false"])'
+    'input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="file"]):not([type="image"]):not([type="checkbox"]):not([type="radio"]), textarea, select, [contenteditable]:not([contenteditable="false"])',
   );
 
   const inputsCount = inputs.length;

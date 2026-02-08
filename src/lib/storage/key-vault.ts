@@ -9,7 +9,7 @@ import type { EncryptedKey } from "@/types/settings";
 
 const logger = createLogger("storage:key-vault");
 
-interface KeyStoreEntry extends EncryptedKey { }
+interface KeyStoreEntry extends EncryptedKey {}
 
 type KeyStore = Partial<Record<AIProvider, KeyStoreEntry>>;
 
@@ -28,7 +28,7 @@ export function getStoredKeys(): Promise<KeyStore> {
 
 export async function storeKey(
   provider: AIProvider,
-  apiKey: string
+  apiKey: string,
 ): Promise<void> {
   const salt = await generateSalt();
   const encrypted = await encrypt(apiKey, getDeviceSecret(), salt);
@@ -39,7 +39,7 @@ export async function storeKey(
 }
 
 export async function getKey(
-  provider: AIProvider
+  provider: AIProvider,
 ): Promise<string | undefined> {
   const store = await getStoredKeys();
   const entry = store[provider];

@@ -23,7 +23,7 @@ export function useProviderKeyStatuses() {
             provider,
           });
           statuses[provider] = Boolean(hasKey);
-        })
+        }),
       );
 
       return statuses;

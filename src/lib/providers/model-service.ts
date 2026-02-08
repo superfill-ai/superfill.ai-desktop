@@ -151,7 +151,7 @@ class ModelService {
               m.id.includes("whisper") ||
               m.id.includes("distil") ||
               m.id.includes("guard")
-            )
+            ),
         )
         .map((m) => ({ id: m.id, name: m.id }));
 
@@ -185,7 +185,7 @@ class ModelService {
         "https://generativelanguage.googleapis.com/v1/models",
         {
           headers: { "x-goog-api-key": apiKey },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -197,7 +197,7 @@ class ModelService {
         .filter(
           (m) =>
             m.name.includes("gemini") &&
-            m.supportedGenerationMethods?.includes("generateContent")
+            m.supportedGenerationMethods?.includes("generateContent"),
         )
         .map((m) => ({ id: m.name, name: m.displayName }));
 

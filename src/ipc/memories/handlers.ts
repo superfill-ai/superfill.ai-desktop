@@ -38,7 +38,7 @@ export const bulkCreateMemories = os
     return addMemories(
       input.map((entry) => ({
         ...entry,
-      }))
+      })),
     );
   });
 

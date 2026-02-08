@@ -25,7 +25,7 @@ const logger = createLogger("ipc:autofill");
 let activeEngine: StagehandEngine | null = null;
 
 function resolveBrowserExecutable(
-  preferred: BrowserType | "auto"
+  preferred: BrowserType | "auto",
 ): string | undefined {
   if (preferred !== "auto") {
     return findBrowserExecutable(preferred);
@@ -85,7 +85,7 @@ export const startAutofill = os
 
     const browserSettings = await getBrowserSettings();
     const executablePath = resolveBrowserExecutable(
-      browserSettings.preferredBrowser
+      browserSettings.preferredBrowser,
     );
 
     const browserOptions: BrowserLaunchOptions = {};
@@ -100,7 +100,7 @@ export const startAutofill = os
     }
 
     logger.info(
-      `Starting autofill for ${url} with provider=${provider} model=${modelName ?? "default"} browser=${executablePath ?? "bundled-chromium"}`
+      `Starting autofill for ${url} with provider=${provider} model=${modelName ?? "default"} browser=${executablePath ?? "bundled-chromium"}`,
     );
 
     if (activeEngine) {
@@ -121,7 +121,7 @@ export const startAutofill = os
         provider as AIProvider,
         apiKey ?? "",
         modelName,
-        browserOptions
+        browserOptions,
       );
       const result = await engine.runAutofill(url, memories);
       return result;

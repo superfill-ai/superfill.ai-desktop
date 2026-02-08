@@ -22,7 +22,7 @@ const OPENAI_COMPATIBLE_PROVIDERS = {
 export const getAIModel = (
   provider: AIProvider,
   apiKey: string,
-  model?: string
+  model?: string,
 ) => {
   if (provider === "anthropic") {
     const anthropic = createAnthropic({

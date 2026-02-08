@@ -75,7 +75,7 @@ function ProvidersPanel() {
   const handleChange = (
     provider: AIProvider,
     field: "key" | "model",
-    value: string
+    value: string,
   ) => {
     setForm((prev) => ({
       ...prev,
@@ -146,7 +146,7 @@ function ProviderCard({
   onChange: (
     provider: AIProvider,
     field: "key" | "model",
-    value: string
+    value: string,
   ) => void;
   onSave: () => Promise<void>;
   onDelete: () => Promise<void>;
@@ -254,7 +254,7 @@ function ProviderCard({
 
 function saveDisabled(
   config: ReturnType<typeof getProviderConfig>,
-  formValue: { key: string; model: string }
+  formValue: { key: string; model: string },
 ) {
   if (!formValue.model) {
     return true;
@@ -275,7 +275,7 @@ function ModelsPanel() {
       gemini: "Gemini 2.5 family",
       ollama: "Local models via Ollama",
     }),
-    []
+    [],
   );
 
   return (

@@ -31,7 +31,7 @@ const BROWSER_SETTINGS_FALLBACK: BrowserSettings = {
 export function getAISettings(): Promise<AISettings> {
   return readFromStore<AISettings>(
     STORAGE_FILES.AI_SETTINGS,
-    AI_SETTINGS_FALLBACK
+    AI_SETTINGS_FALLBACK,
   );
 }
 
@@ -43,7 +43,7 @@ export async function setAISettings(settings: AISettings): Promise<void> {
 export function getUISettings(): Promise<UISettings> {
   return readFromStore<UISettings>(
     STORAGE_FILES.UI_SETTINGS,
-    UI_SETTINGS_FALLBACK
+    UI_SETTINGS_FALLBACK,
   );
 }
 
@@ -55,12 +55,12 @@ export async function setUISettings(settings: UISettings): Promise<void> {
 export function getBrowserSettings(): Promise<BrowserSettings> {
   return readFromStore<BrowserSettings>(
     STORAGE_FILES.BROWSER_SETTINGS,
-    BROWSER_SETTINGS_FALLBACK
+    BROWSER_SETTINGS_FALLBACK,
   );
 }
 
 export async function setBrowserSettings(
-  settings: BrowserSettings
+  settings: BrowserSettings,
 ): Promise<void> {
   logger.debug("Persisting browser settings", settings);
   await writeToStore(STORAGE_FILES.BROWSER_SETTINGS, settings);

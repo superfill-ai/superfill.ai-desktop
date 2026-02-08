@@ -20,12 +20,12 @@ const FALLBACK_MEMORIES: MemoryEntry[] = [];
 export function getAllMemories(): Promise<MemoryEntry[]> {
   return readFromStore<MemoryEntry[]>(
     STORAGE_FILES.MEMORIES,
-    FALLBACK_MEMORIES
+    FALLBACK_MEMORIES,
   );
 }
 
 export async function addMemory(
-  entry: CreateMemoryEntry
+  entry: CreateMemoryEntry,
 ): Promise<MemoryEntry> {
   const newEntry: MemoryEntry = {
     ...entry,
@@ -40,14 +40,14 @@ export async function addMemory(
   await updateStore<MemoryEntry[]>(
     STORAGE_FILES.MEMORIES,
     (current) => [...current, newEntry],
-    FALLBACK_MEMORIES
+    FALLBACK_MEMORIES,
   );
 
   return newEntry;
 }
 
 export async function addMemories(
-  entries: CreateMemoryEntry[]
+  entries: CreateMemoryEntry[],
 ): Promise<MemoryEntry[]> {
   const newEntries: MemoryEntry[] = entries.map((entry) => ({
     ...entry,
@@ -62,7 +62,7 @@ export async function addMemories(
   await updateStore<MemoryEntry[]>(
     STORAGE_FILES.MEMORIES,
     (current) => [...current, ...newEntries],
-    FALLBACK_MEMORIES
+    FALLBACK_MEMORIES,
   );
 
   return newEntries;
@@ -70,7 +70,7 @@ export async function addMemories(
 
 export async function updateMemory(
   id: string,
-  updates: UpdateMemoryEntry
+  updates: UpdateMemoryEntry,
 ): Promise<MemoryEntry> {
   let updatedEntry: MemoryEntry | undefined;
 
@@ -92,7 +92,7 @@ export async function updateMemory(
         return updatedEntry;
       });
     },
-    FALLBACK_MEMORIES
+    FALLBACK_MEMORIES,
   );
 
   if (!updatedEntry) {
@@ -106,12 +106,12 @@ export async function deleteMemory(id: string): Promise<void> {
   await updateStore<MemoryEntry[]>(
     STORAGE_FILES.MEMORIES,
     (current) => current.filter((entry) => entry.id !== id),
-    FALLBACK_MEMORIES
+    FALLBACK_MEMORIES,
   );
 }
 
 export async function getMemoryById(
-  id: string
+  id: string,
 ): Promise<MemoryEntry | undefined> {
   const entries = await getAllMemories();
   return entries.find((entry) => entry.id === id);
@@ -129,14 +129,14 @@ export async function exportMemoriesToCSV(): Promise<string> {
     | "createdAt"
     | "updatedAt"
   > = [
-      "question",
-      "answer",
-      "category",
-      "tags",
-      "confidence",
-      "createdAt",
-      "updatedAt",
-    ];
+    "question",
+    "answer",
+    "category",
+    "tags",
+    "confidence",
+    "createdAt",
+    "updatedAt",
+  ];
 
   const rows = entries.map((entry) => ({
     question: entry.question || "",
@@ -152,7 +152,7 @@ export async function exportMemoriesToCSV(): Promise<string> {
 }
 
 export async function importMemoriesFromCSV(
-  csvContent: string
+  csvContent: string,
 ): Promise<number> {
   try {
     const rows = parseCSV<{
@@ -173,9 +173,9 @@ export async function importMemoriesFromCSV(
       const tags = Array.isArray(row.tags)
         ? row.tags
         : row.tags
-          .split(";")
-          .map((t) => t.trim())
-          .filter(Boolean);
+            .split(";")
+            .map((t) => t.trim())
+            .filter(Boolean);
 
       const category = isAllowedCategory(row.category)
         ? row.category
@@ -183,7 +183,7 @@ export async function importMemoriesFromCSV(
 
       const confidence = Math.max(
         0,
-        Math.min(1, Number.parseFloat(row.confidence) || 0.8)
+        Math.min(1, Number.parseFloat(row.confidence) || 0.8),
       );
 
       const createdAt = row.createdAt || new Date().toISOString();
@@ -207,7 +207,7 @@ export async function importMemoriesFromCSV(
     await updateStore<MemoryEntry[]>(
       STORAGE_FILES.MEMORIES,
       (current) => [...current, ...importedEntries],
-      FALLBACK_MEMORIES
+      FALLBACK_MEMORIES,
     );
 
     return importedEntries.length;

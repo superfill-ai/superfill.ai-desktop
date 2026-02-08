@@ -33,7 +33,7 @@ function escapeField(value: string, options: Required<CsvOptions>): string {
 export function stringifyToCSV<T extends Record<string, unknown>>(
   data: T[],
   headers: (keyof T)[],
-  options: CsvOptions = {}
+  options: CsvOptions = {},
 ): string {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const { delimiter, lineBreak } = opts;
@@ -65,7 +65,7 @@ export function stringifyToCSV<T extends Record<string, unknown>>(
 
 export function parseCSV<T extends Record<string, unknown>>(
   csvString: string,
-  options: CsvOptions = {}
+  options: CsvOptions = {},
 ): T[] {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const { delimiter, quote } = opts;

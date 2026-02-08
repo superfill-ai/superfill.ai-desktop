@@ -41,7 +41,7 @@ function MemoriesPage() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [category, setCategory] = useState<AllowedCategory>(
-    allowedCategories[0]
+    allowedCategories[0],
   );
   const [tags, setTags] = useState("");
 

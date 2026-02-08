@@ -91,7 +91,7 @@ export function isValidProvider(provider: string): provider is AIProvider {
 
 export function validateProviderKey(
   provider: AIProvider,
-  key: string
+  key: string,
 ): boolean {
   const config = PROVIDER_REGISTRY[provider];
   if (!config.requiresApiKey) {
@@ -104,7 +104,7 @@ export function validateProviderKey(
 }
 
 export function buildProviderOptions(
-  hasKey: (provider: AIProvider) => boolean
+  hasKey: (provider: AIProvider) => boolean,
 ): ProviderOption[] {
   return AI_PROVIDERS.map((provider) => {
     const config = getProviderConfig(provider);

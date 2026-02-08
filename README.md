@@ -18,7 +18,6 @@ To develop a Electron app, you probably will need some UI, test, formatter, styl
 - [TypeScript 5.9](https://www.typescriptlang.org)
 - [oRPC](https://orpc.unnoq.com)
 - [Prettier](https://prettier.io)
-- [Ultracite with Biome](https://www.ultracite.ai/providers/biome)
 - [Zod 4](https://zod.dev)
 - [React Query (TanStack)](https://react-query.tanstack.com)
 
@@ -65,13 +64,13 @@ git clone https://github.com/LuanRoger/electron-shadcn.git
 
 Or use it as a template on GitHub
 
-2. Install dependencies
+1. Install dependencies
 
 ```bash
 npm install
 ```
 
-3. Run the app
+1. Run the app
 
 ```bash
 npm run start

@@ -125,7 +125,7 @@ export const useMemoryStats = () => {
 };
 
 export const useTopUsedTags = (
-  topN: number
+  topN: number,
 ): Array<{ tag: string; count: number }> => {
   const { entries } = useMemories();
 
@@ -160,7 +160,7 @@ export const useMemoriesByTags = (tags: string[]) => {
 
   return useMemo(() => {
     return entries.filter((entry) =>
-      tags.some((tag) => entry.tags.includes(tag))
+      tags.some((tag) => entry.tags.includes(tag)),
     );
   }, [entries, tags]);
 };
