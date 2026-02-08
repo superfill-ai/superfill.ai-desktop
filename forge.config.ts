@@ -10,13 +10,30 @@ import type { ForgeConfig } from "@electron-forge/shared-types";
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    name: "Superfill.ai",
+    executableName: "superfill",
+    appBundleId: "ai.superfill.desktop",
+    appCategoryType: "public.app-category.productivity",
+    icon: "./assets/icons/icon-512",
+    extraResource: ["./assets"],
   },
   rebuildConfig: {},
   makers: [
-    new MakerSquirrel({}),
+    new MakerSquirrel({
+      setupIcon: "./assets/icons/icon-256.png",
+      iconUrl: "https://superfill.ai/favicon.ico",
+    }),
     new MakerZIP({}, ["darwin"]),
-    new MakerRpm({}),
-    new MakerDeb({}),
+    new MakerRpm({
+      options: {
+        icon: "./assets/icons/icon-512.png",
+      },
+    }),
+    new MakerDeb({
+      options: {
+        icon: "./assets/icons/icon-512.png",
+      },
+    }),
   ],
   publishers: [
     {
@@ -27,8 +44,8 @@ const config: ForgeConfig = {
       name: "@electron-forge/publisher-github",
       config: {
         repository: {
-          owner: "LuanRoger",
-          name: "electron-shadcn",
+          owner: "superfill-ai",
+          name: "superfill.ai",
         },
         draft: true,
         prerelease: false,
