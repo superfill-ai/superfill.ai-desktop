@@ -26,7 +26,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.57",
     "@ai-sdk/google": "^2.0.52",
-    "@ai-sdk/openai": "^2.0.89",
+    "@ai-sdk/openai": "^3.0.29",
     "@browserbasehq/stagehand": "^3.0.8",
     "@fontsource-variable/geist": "^5.2.8",
     "@fontsource-variable/geist-mono": "^5.2.7",
