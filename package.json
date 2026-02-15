@@ -24,7 +24,7 @@
     "prepare": "simple-git-hooks"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.0.57",
+    "@ai-sdk/anthropic": "^3.0.44",
     "@ai-sdk/google": "^2.0.52",
     "@ai-sdk/openai": "^2.0.89",
     "@browserbasehq/stagehand": "^3.0.8",
